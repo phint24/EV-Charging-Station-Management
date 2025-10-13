@@ -1,4 +1,4 @@
-package project.code.evcharging.backend;
+package project.code;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;

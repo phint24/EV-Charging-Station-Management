@@ -1,4 +1,4 @@
-package project.code.evcharging.backend.model;
+package project.code.model;
 
 import jakarta.persistence.*;
 import lombok.*;

@@ -1,4 +1,4 @@
-package project.code.evcharging.backend;
+package project.code;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
