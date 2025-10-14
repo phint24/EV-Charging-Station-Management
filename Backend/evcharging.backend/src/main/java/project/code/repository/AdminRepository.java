@@ -6,6 +6,6 @@ import java.util.Optional;
 import project.code.model.Admin;
 
 @Repository
-public interface AdminRepository extends JpaRepository <Admin,String> {
+public interface AdminRepository extends JpaRepository <Admin, Long> {
     Optional<Admin> findByEmail(String email);
 }
