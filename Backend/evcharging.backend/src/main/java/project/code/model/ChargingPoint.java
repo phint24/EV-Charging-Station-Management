@@ -7,8 +7,7 @@ import lombok.*;
 @Entity
 @Table(name = "chargingPoints")
 @Data
-@NoArgsConstructor
-@AllArgsConstructor
+
 @Builder
 public class ChargingPoint {
 

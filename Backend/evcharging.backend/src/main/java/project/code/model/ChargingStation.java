@@ -7,8 +7,6 @@ import lombok.*;
 @Entity
 @Table(name = "chargingStations")
 @Data
-@NoArgsConstructor
-@AllArgsConstructor
 @Builder
 public class ChargingStation {
      @Id

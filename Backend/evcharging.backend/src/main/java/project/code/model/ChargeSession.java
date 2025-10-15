@@ -8,12 +8,9 @@ import lombok.*;
 @Entity
 @Table(name = "chargeSessions")
 @Data
-@NoArgsConstructor
-@AllArgsConstructor
 @Builder
 public class ChargeSession {
      @Id
-     @GeneratedValue(strategy = GenerationType.IDENTITY)
      private String sessionId;
 
      @Column(nullable = false)
