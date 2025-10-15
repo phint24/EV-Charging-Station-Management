@@ -23,10 +23,10 @@ public class ChargeSessionService {
     }
 
     public ChargeSession create(ChargeSession session) {
-        session.startSession("S01", "CP01");
-        return repository.save(session);
+        session.startSession("Driver01", session.getChargingPointId());
+         return repository.save(session);
     }
-
+    
     public ChargeSession update(String id, ChargeSession newSession) {
         return repository.findById(id)
                 .map(session -> {
