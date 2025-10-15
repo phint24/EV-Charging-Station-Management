@@ -1,15 +1,12 @@
 package project.code.model;
 
 import jakarta.persistence.*;
-import lombok.*;
+import lombok.Data;
 
-@Entity
-@Table(name = "admins")
 @Data
-@NoArgsConstructor
-@AllArgsConstructor
-@Builder
-public class Admin { 
+@Entity
+@Table(name = "CSStaffs")
+public class CSStaff {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -24,8 +21,20 @@ public class Admin {
     @Column(nullable = false)
     private String password;
 
-    @Column(nullable = false, length = 50)
-    private String role;
+    // Mỗi nhân viên làm việc tại 1 trạm sạc
+    @ManyToOne
+    @JoinColumn(name = "stationId", nullable = false)
+    private ChargingStation stationAssigned;
+
+    public CSStaff() {}
+
+    public CSStaff(Long id, String name, String email, String password, ChargingStation stationAssigned) {
+        this.id = id;
+        this.name = name;
+        this.email = email;
+        this.password = password;
+        this.stationAssigned = stationAssigned;
+    }
 
     public Long getId() {
         return id;
@@ -55,23 +64,10 @@ public class Admin {
         this.password = password;
     }
 
-    public String getRole() {
-        return role;
+    public ChargingStation getStationAssigned() {
+        return stationAssigned;
     }
-    public void setRole(String role) {
-        this.role = role;
-    }
-
-    public boolean login(String email, String password) {
-        return this.email.equals(email) && this.password.equals(password);
-    }
-
-    public void monitorAllStations() {
-        System.out.println("Monitoring all charging stations...");
-    }
-
-    public void manageUsers() {
-        System.out.println("Managing all users...");
+    public void setStationAssigned(ChargingStation stationAssigned) {
+        this.stationAssigned = stationAssigned;
     }
 }
-
