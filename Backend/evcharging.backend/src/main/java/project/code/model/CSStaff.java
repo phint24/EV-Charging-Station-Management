@@ -1,11 +1,13 @@
 package project.code.model;
+
 import jakarta.persistence.*;
 import lombok.Data;
 
 @Data
 @Entity
-@Table(name = "cs_staff")
+@Table(name = "CSStaffs")
 public class CSStaff {
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
@@ -19,12 +21,14 @@ public class CSStaff {
     @Column(nullable = false)
     private String password;
 
-    @Column(name = "station_id", length = 100)
-    private String stationAssigned;
+    // Mỗi nhân viên làm việc tại 1 trạm sạc
+    @ManyToOne
+    @JoinColumn(name = "stationId", nullable = false)
+    private ChargingStation stationAssigned;
 
-    public CSStaff() {};
+    public CSStaff() {}
 
-    public CSStaff(Long id, String name, String email, String password, String stationAssigned) {
+    public CSStaff(Long id, String name, String email, String password, ChargingStation stationAssigned) {
         this.id = id;
         this.name = name;
         this.email = email;
@@ -60,10 +64,10 @@ public class CSStaff {
         this.password = password;
     }
 
-    public String getStationAssigned() {
+    public ChargingStation getStationAssigned() {
         return stationAssigned;
     }
-    public void setStationAssigned(String stationAssigned) {
+    public void setStationAssigned(ChargingStation stationAssigned) {
         this.stationAssigned = stationAssigned;
     }
 }
