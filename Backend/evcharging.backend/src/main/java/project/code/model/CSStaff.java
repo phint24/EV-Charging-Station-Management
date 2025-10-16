@@ -21,7 +21,9 @@ public class CSStaff {
     @Column(nullable = false)
     private String password;
 
-    // Mỗi nhân viên làm việc tại 1 trạm sạc
+    @Column(nullable = false)
+    private String phoneNumber;
+
     @ManyToOne
     @JoinColumn(name = "stationId", nullable = false)
     private ChargingStation stationAssigned;
@@ -62,6 +64,13 @@ public class CSStaff {
     }
     public void setPassword(String password) {
         this.password = password;
+    }
+
+    public String getPhoneNumber() {
+        return phoneNumber;
+    }
+    public void setPhoneNumber(String phoneNumber) {
+        this.phoneNumber = phoneNumber;
     }
 
     public ChargingStation getStationAssigned() {
