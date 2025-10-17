@@ -16,6 +16,8 @@ public class ChargingPoint {
 
     @Column(nullable = false, length = 50)
     private String type;
+
+    @Column(length = 100)
     private double power;
 
     @Column(length = 50)
