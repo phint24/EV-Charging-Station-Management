@@ -23,12 +23,16 @@ public class ChargeSession {
 
      @Column(nullable = false)
      private String chargingPointId;
+     @Column(length = 100)
      private LocalDateTime startTime;
+     @Column(length = 100)
      private LocalDateTime endTime;
+     @Column(length = 100)
      private double energyUsed;
+     @Column(length = 100)
      private double cost;
 
-     @Column(length = 50)
+     @Column(length = 100)
      private String status;
 
     // Constructors
