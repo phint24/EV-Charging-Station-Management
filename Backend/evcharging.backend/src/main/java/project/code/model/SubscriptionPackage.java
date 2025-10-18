@@ -1,44 +1,106 @@
-package project.code.model;   // Lưu thông tin gói (id, price, durationDays...)
+package project.code.model;
 
 import jakarta.persistence.*;
-import java.time.LocalDateTime;
+import lombok.*;
 
 @Entity
-@Table(name = "subscription_packages")
+@Table(name = "subscriptionPackage")
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
 public class SubscriptionPackage {
+    
     @Id
-    @Column(name = "package_id")
+    @Column(nullable = false, length = 100)
     private String packageId;
 
+    @Column(nullable = false, length = 100)
     private String name;
 
     @Column(length = 2000)
     private String description;
 
+    @Column(nullable = false)
     private double price;
 
-    private int durationDays; // số ngày hiệu lực
+    @Column(nullable = false)
+    private int durationDays;
 
     @Column(length = 1000)
     private String benefits;
 
-    private String type; // e.g. "monthly", "annual", "payg"
+    @Column(nullable = false, length = 50)
+    private String type;
 
-    private LocalDateTime createdAt;
-    private LocalDateTime updatedAt;
+    // Getters - Setters
+    public String getPackageId() {
+        return packageId;
+    }
+    public void setPackageId(String packageId) {
+        this.packageId = packageId;
+    }
 
-    public SubscriptionPackage() {}
+    public String getName() {
+        return name;
+    }
+    public void setName(String name) {
+        this.name = name;
+    }
 
-    // Constructor, getters và setters (omitted for brevity) — hiện thực đầy đủ khi coding
-    // Generate getters/setters or use Lombok in project
-    // Ví dụ getter/setter cho packageId:
-    public String getPackageId() { return packageId; }
-    public void setPackageId(String packageId) { this.packageId = packageId; }
+    public String getDescription() {
+        return description;
+    }
+    public void setDescription(String description) {
+        this.description = description;
+    }
 
-    // ... các getter/setter khác
+    public double getPrice() {
+        return price;
+    }
+    public void setPrice(double price) {
+        this.price = price;
+    }
 
-    @PrePersist
-    public void prePersist() { createdAt = LocalDateTime.now(); updatedAt = LocalDateTime.now(); }
-    @PreUpdate
-    public void preUpdate() { updatedAt = LocalDateTime.now(); }
+    public int getDurationDays() {
+        return durationDays;
+    }
+    public void setDurationDays(int durationDays) {
+        this.durationDays = durationDays;
+    }
+
+    public String getBenefits() {
+        return benefits;
+    }
+    public void setBenefits(String benefits) {
+        this.benefits = benefits;
+    }
+
+    public String getType() {
+        return type;
+    }
+    public void setType(String type) {
+        this.type = type;
+    }
+
+    // Methods
+    public void createPackage() {
+        System.out.println("Tạo gói đăng ký: " + this.name);
+    }
+
+    public void updatePackage() {
+        System.out.println("Cập nhật gói đăng ký: " + this.name);
+    }
+
+    public void deletePackage() {
+        System.out.println("Xóa gói đăng ký: " + this.packageId);
+    }
+
+    public void activateForUser(String userId) {
+        System.out.println("Kích hoạt gói " + this.name + " cho người dùng: " + userId);
+    }
+
+    public void cancelForUser(String userId) {
+        System.out.println("Hủy gói " + this.name + " cho người dùng: " + userId);
+    }
 }
