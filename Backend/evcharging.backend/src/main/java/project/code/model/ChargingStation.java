@@ -1,4 +1,6 @@
 package project.code.model;
+import java.time.LocalDateTime;
+
 import jakarta.persistence.*;
 import lombok.*;
 import project.code.model.Report;
@@ -20,9 +22,13 @@ public class ChargingStation {
      @Column(nullable = false)
      private String location;
 
-     @Column(length = 50)
+     @Column(length = 100)
      private String status;
+
+     @Column(length = 100)
      private int totalChargingPoint;
+
+     @Column(length = 100)
      private int availableChargers;
 
     // Constructors
@@ -55,7 +61,7 @@ public class ChargingStation {
           System.out.println("Báo cáo được tạo cho trạm: " + this.name + " - Mã: " + this.stationId);
           return report;
      }
-    // // Methods
+    // End Methods
 
     // Các Hàm Getters - Setters
     public String getStationId() {
