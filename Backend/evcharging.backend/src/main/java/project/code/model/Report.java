@@ -8,12 +8,16 @@ import java.time.LocalDateTime;
 public class Report {
     @Id
     private String reportId;
-
+    @Column(nullable = false, length = 100)
     private String reportType; // "revenue" or "usage"
 
+    @Column(nullable = false)
     private LocalDateTime periodStart;
+
+    @Column(nullable = false)
     private LocalDateTime periodEnd;
 
+    @Column(nullable = false, length = 100)
     private String stationId;
 
     private int totalSessions;
