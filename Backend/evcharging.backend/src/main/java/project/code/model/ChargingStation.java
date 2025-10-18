@@ -1,8 +1,9 @@
 package project.code.model;
-
-
 import jakarta.persistence.*;
 import lombok.*;
+import project.code.model.Report;
+
+
 
 @Entity
 @Table(name = "chargingStations")

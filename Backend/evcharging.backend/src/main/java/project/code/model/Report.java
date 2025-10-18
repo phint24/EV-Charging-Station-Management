@@ -9,12 +9,12 @@ public class Report {
     @Id
     private String reportId;
 
-    private String reportType; // "revenue" or "usage"
+    private String ReportType; // "revenue" or "usage"
 
     private LocalDateTime periodStart;
     private LocalDateTime periodEnd;
 
-    private String stationId;
+    private String StationId;
 
     private int totalSessions;
     private double totalEnergy;
