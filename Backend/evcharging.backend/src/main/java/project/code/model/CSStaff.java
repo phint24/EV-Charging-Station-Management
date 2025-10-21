@@ -21,11 +21,11 @@ public class CSStaff {
     @Column(nullable = false)
     private String password;
 
-    @Column(nullable = false)
+    @Column(name="phone_number", nullable = false)
     private String phoneNumber;
 
     @ManyToOne
-    @JoinColumn(name = "stationId", nullable = false)
+    @JoinColumn(name = "station_id", nullable = false)
     private ChargingStation stationAssigned;
 
     public CSStaff() {}

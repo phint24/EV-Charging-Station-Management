@@ -12,6 +12,7 @@ public class ChargingPoint {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name="charging_point_id")
     private Long chargingPointId;
 
     @Column(nullable = false, length = 50)

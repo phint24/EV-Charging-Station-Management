@@ -14,28 +14,28 @@ import lombok.*;
 public class Report {
     
     @Id
-    @Column(nullable = false, length = 100)
+    @Column(name= "report_id", nullable = false, length = 100)
     private String reportId;
 
-    @Column(nullable = false, length = 100)
+    @Column(name= "report_type",nullable = false, length = 100)
     private String reportType;
 
-    @Column(nullable = false)
+    @Column(name= "period_start", nullable = false)
     private LocalDateTime periodStart;
 
-    @Column(nullable = false)
+    @Column(name= "period_end", nullable = false)
     private LocalDateTime periodEnd;
 
-    @Column(nullable = false, length = 100)
+    @Column(name= "station_id", nullable = false, length = 100)
     private String stationId;
 
-    @Column(nullable = false)
+    @Column(name= "total_sessions",nullable = false)
     private int totalSessions;
 
-    @Column(nullable = false)
+    @Column(name= "total_enengy",nullable = false)
     private double totalEnergy;
 
-    @Column(nullable = false)
+    @Column(name= "total_revenue",nullable = false)
     private double totalRevenue;
 
     // Getters - Setters

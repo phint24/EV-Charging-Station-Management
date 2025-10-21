@@ -11,12 +11,12 @@ public class Vehicle {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(nullable = false, length = 50) private String vehicleId;
-    @Column(nullable = false, length = 50) private String ownerId; // liên kết tới EVDriver (driverId)
+    @Column(name="vehicle_id", nullable = false, length = 50) private String vehicleId;
+    @Column(name="owner_id", nullable = false, length = 50) private String ownerId; // liên kết tới EVDriver (driverId)
     @Column(nullable = false, length = 50) private String brand;
     @Column(nullable = false, length = 50) private String model;
-    @Column(nullable = false) private double batteryCapacity;
-    @Column(nullable = false, length = 50) private String connectorType;
+    @Column(name="battery_capacity", nullable = false) private double batteryCapacity;
+    @Column(name="connector_type", nullable = false, length = 50) private String connectorType;
 
     // Một xe thuộc về 1 tài xế
     @ManyToOne
