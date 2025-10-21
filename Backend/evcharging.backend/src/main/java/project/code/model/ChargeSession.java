@@ -2,13 +2,11 @@ package project.code.model;
 
 import java.time.LocalDateTime;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.Id;
-import jakarta.persistence.Table;
+import jakarta.persistence.*;
 import lombok.Builder;
 import lombok.Data;
 
+import project.code.model.EVDriver;
 
 @Entity
 @Table(name = "chargeSessions")
@@ -38,13 +36,21 @@ public class ChargeSession {
      @Column(length = 100)
      private String status;
 
+    @ManyToOne
+    @JoinColumn(name = "driver_id", nullable = false)
+    private EVDriver driver;
+
+    @ManyToOne
+    @JoinColumn(name = "vehicle_id")
+    private Vehicle vehicle;
+
     // Constructors
     public ChargeSession() {}
 
     public ChargeSession(
         String sessionId, String stationId, String chargingPointId,
         LocalDateTime startTime, LocalDateTime endTime,
-        double energyUsed, double cost, String status) {
+        double energyUsed, double cost, String status, EVDriver driver, Vehicle vehicle) {
         this.sessionId = sessionId;
         this.stationId = stationId;
         this.chargingPointId = chargingPointId;
@@ -53,6 +59,8 @@ public class ChargeSession {
         this.energyUsed = energyUsed;
         this.cost = cost;
         this.status = status;
+        this.driver = driver;
+        this.vehicle = vehicle;
     }
     // End Constructors
 

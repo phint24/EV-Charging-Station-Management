@@ -26,7 +26,6 @@ public class CSStaff {
 
     @ManyToOne
     @JoinColumn(name = "station_id", nullable = false)
-    @Column(name="station_assigned")
     private ChargingStation stationAssigned;
 
     public CSStaff() {}
