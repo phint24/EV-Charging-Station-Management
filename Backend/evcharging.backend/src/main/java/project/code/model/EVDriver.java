@@ -12,23 +12,20 @@ EVDriver {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(nullable = false, length = 50) private String driverId;
+    @Column(name="driver_id", nullable = false, length = 50) private String driverId;
     @Column(nullable = false, length = 100) private String name;
     @Column(nullable = false, length = 100) private String email;
-    @Column(nullable = false, length = 11) private String phoneNumber;
+    @Column(name="phone_number",nullable = false, length = 11) private String phoneNumber;
     @Column(nullable = false) private String password;
     @Column(nullable = false, length = 100) private String vehicle;
     @Column(nullable = false) private String wallet;
 
-    // Một tài xế có thể sở hữu nhiều xe
     @OneToMany(mappedBy = "driver", cascade = CascadeType.ALL)
     private List<Vehicle> vehicles;
 
-    // Một tài xế có thể có nhiều phiên sạc
     @OneToMany(mappedBy = "driver", cascade = CascadeType.ALL)
     private List<ChargeSession> chargeSessions;
 
-    // Một tài xế có thể tham gia 1 gói đăng ký
     @ManyToOne
     @JoinColumn(name = "package_id")
     private SubscriptionPackage subscriptionPackage;

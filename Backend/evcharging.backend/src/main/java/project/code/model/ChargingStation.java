@@ -11,6 +11,7 @@ import lombok.*;
 public class ChargingStation {
      @Id
      @GeneratedValue(strategy = GenerationType.IDENTITY)
+     @Column(name="station_id")
      private String stationId;
 
      @Column(nullable = false, length = 100)
@@ -22,10 +23,10 @@ public class ChargingStation {
      @Column(length = 100)
      private String status;
 
-     @Column(length = 100)
+     @Column(name="total_charging_point", length = 100)
      private int totalChargingPoint;
 
-     @Column(length = 100)
+     @Column(name="available_chargers", length = 100)
      private int availableChargers;
 
     // Constructors

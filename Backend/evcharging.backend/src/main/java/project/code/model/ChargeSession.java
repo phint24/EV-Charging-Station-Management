@@ -16,18 +16,21 @@ import lombok.Data;
 @Builder
 public class ChargeSession {
      @Id
+     @Column(name= "session_id")
      private String sessionId;
 
-     @Column(nullable = false)
+     @Column(name="station_id", nullable = false)
      private String stationId;
 
-     @Column(nullable = false)
+     @Column(name= "charging_point_id", nullable = false)
      private String chargingPointId;
-     @Column(length = 100)
+
+     @Column(name="start_time", length = 100)
      private LocalDateTime startTime;
-     @Column(length = 100)
+
+     @Column(name="end_time", length = 100)
      private LocalDateTime endTime;
-     @Column(length = 100)
+     @Column(name="energy_used", length = 100)
      private double energyUsed;
      @Column(length = 100)
      private double cost;
