@@ -53,9 +53,9 @@ export function Landing({ onNavigate }: LandingProps) {
   ];
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-white to-gray-50">
+    <div className="min-h-screen flex flex-col relative" style={{ background: 'linear-gradient(45deg, var(--chart-4), var(--chart-2), var(--chart-5))', backgroundSize: '200% 200%', animation: 'energyWave 15s ease infinite' }}>
       {/* Header */}
-      <header className="border-b bg-white">
+      <header className="border-b">
         <div className="container mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
@@ -121,7 +121,7 @@ export function Landing({ onNavigate }: LandingProps) {
       </section>
 
       {/* Features Section */}
-      <section className="bg-white py-20">
+      <section className="bg-white/80 py-20">
         <div className="container mx-auto px-4">
           <div className="text-center mb-12">
             <h2 className="mb-4">Why Choose EV Charge?</h2>
@@ -165,8 +165,7 @@ export function Landing({ onNavigate }: LandingProps) {
               </Button>
               <Button
                 size="lg"
-                variant="outline"
-                className="border-white text-white hover:bg-white/10"
+                className="bg-white text-[#0f766e] hover:bg-white/90"
                 onClick={() => onNavigate('/driver/dashboard')}
               >
                 Explore Stations
@@ -177,7 +176,7 @@ export function Landing({ onNavigate }: LandingProps) {
       </section>
 
       {/* Footer */}
-      <footer className="border-t bg-white py-8">
+      <footer className="border-t bg-white/80 py-8">
         <div className="container mx-auto px-4">
           <div className="flex flex-col md:flex-row items-center justify-between gap-4">
             <div className="flex items-center gap-2">
