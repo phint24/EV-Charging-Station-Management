@@ -1,18 +1,19 @@
 package project.code.services;
 
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import project.code.model.SubscriptionPackage;
+import project.code.model.enums.SubscriptionType;
 import project.code.repository.SubscriptionPackageRepository;
 
 import java.util.List;
 import java.util.Optional;
 
 @Service
+@RequiredArgsConstructor
 public class SubscriptionPackageService {
 
-    @Autowired
-    private SubscriptionPackageRepository subscriptionPackageRepository;
+    private final SubscriptionPackageRepository subscriptionPackageRepository;
 
     // Lấy tất cả subscription packages
     public List<SubscriptionPackage> getAllPackages() {
@@ -26,7 +27,6 @@ public class SubscriptionPackageService {
 
     // Tạo mới package
     public SubscriptionPackage createPackage(SubscriptionPackage subscriptionPackage) {
-        subscriptionPackage.createPackage();
         return subscriptionPackageRepository.save(subscriptionPackage);
     }
 
@@ -40,7 +40,6 @@ public class SubscriptionPackageService {
                     pkg.setDurationDays(updatedPackage.getDurationDays());
                     pkg.setBenefits(updatedPackage.getBenefits());
                     pkg.setType(updatedPackage.getType());
-                    pkg.updatePackage();
                     return subscriptionPackageRepository.save(pkg);
                 })
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy SubscriptionPackage ID: " + packageId));
@@ -49,10 +48,6 @@ public class SubscriptionPackageService {
     // Xóa package
     public boolean deletePackage(String packageId) {
         if (subscriptionPackageRepository.existsById(packageId)) {
-            Optional<SubscriptionPackage> pkg = subscriptionPackageRepository.findById(packageId);
-            if (pkg.isPresent()) {
-                pkg.get().deletePackage();
-            }
             subscriptionPackageRepository.deleteById(packageId);
             return true;
         }
@@ -69,8 +64,8 @@ public class SubscriptionPackageService {
         return subscriptionPackageRepository.findByNameContainingIgnoreCase(keyword);
     }
 
-    // Lấy packages theo loại (type)
-    public List<SubscriptionPackage> getPackagesByType(String type) {
+    // (6) SỬA LỖI: Nhận vào Enum, không phải String
+    public List<SubscriptionPackage> getPackagesByType(SubscriptionType type) {
         return subscriptionPackageRepository.findByType(type);
     }
 
@@ -119,22 +114,7 @@ public class SubscriptionPackageService {
         return subscriptionPackageRepository.findAllByOrderByDurationDaysAsc();
     }
 
-    // Lấy packages theo type và sắp xếp theo giá
-    public List<SubscriptionPackage> getPackagesByTypeSorted(String type) {
+    public List<SubscriptionPackage> getPackagesByTypeSorted(SubscriptionType type) {
         return subscriptionPackageRepository.findByTypeOrderByPriceAsc(type);
-    }
-
-    // Kích hoạt package cho user
-    public void activatePackageForUser(String packageId, String userId) {
-        SubscriptionPackage pkg = subscriptionPackageRepository.findById(packageId)
-                .orElseThrow(() -> new RuntimeException("Không tìm thấy SubscriptionPackage ID: " + packageId));
-        pkg.activateForUser(userId);
-    }
-
-    // Hủy package cho user
-    public void cancelPackageForUser(String packageId, String userId) {
-        SubscriptionPackage pkg = subscriptionPackageRepository.findById(packageId)
-                .orElseThrow(() -> new RuntimeException("Không tìm thấy SubscriptionPackage ID: " + packageId));
-        pkg.cancelForUser(userId);
     }
 }

@@ -1,51 +1,64 @@
 package project.code.controllers;
 
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
-import project.code.model.ChargingPoint;
 import project.code.services.ChargingPointService;
+
+import project.code.dto.chargingpoint.ChargingPointDto;
+import project.code.dto.chargingpoint.CreateChargingPointRequest;
+import project.code.dto.chargingpoint.UpdateChargingPointRequest;
+import jakarta.validation.Valid;
 
 import java.util.List;
 
 @RestController
 @RequestMapping("/api/charging-points")
 @CrossOrigin(origins = "*")
+@RequiredArgsConstructor
 public class ChargingPointController {
 
-    @Autowired
-    private ChargingPointService service;
+    private final ChargingPointService service;
 
     @GetMapping
-    public List<ChargingPoint> getAll() {
-        return service.getAll();
+    public ResponseEntity<List<ChargingPointDto>> getAll() {
+        return ResponseEntity.ok(service.getAll());
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<ChargingPoint> getById(@PathVariable Long id) {
+    public ResponseEntity<ChargingPointDto> getById(@PathVariable Long id) {
         return service.getById(id)
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
     }
 
     @PostMapping
-    public ChargingPoint create(@RequestBody ChargingPoint cp) {
-        return service.save(cp);
+    @PreAuthorize("hasRole('ROLE_ADMIN')")
+    public ResponseEntity<ChargingPointDto> create(@Valid @RequestBody CreateChargingPointRequest request) { // (5) Dùng DTO
+        ChargingPointDto createdCp = service.create(request);
+        return ResponseEntity.status(201).body(createdCp);
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<ChargingPoint> update(@PathVariable Long id, @RequestBody ChargingPoint cp) {
+    @PreAuthorize("hasRole('ROLE_ADMIN')")
+    public ResponseEntity<?> update(@PathVariable Long id, @Valid @RequestBody UpdateChargingPointRequest request) { // (5) Dùng DTO
         try {
-            ChargingPoint updated = service.update(id, cp);
+            ChargingPointDto updated = service.update(id, request);
             return ResponseEntity.ok(updated);
-        } catch (RuntimeException e) {
-            return ResponseEntity.notFound().build();
+        } catch (jakarta.persistence.EntityNotFoundException e) {
+            return ResponseEntity.status(404).body(e.getMessage());
         }
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> delete(@PathVariable Long id) {
-        service.delete(id);
-        return ResponseEntity.noContent().build();
+    @PreAuthorize("hasRole('ROLE_ADMIN')")
+    public ResponseEntity<String> delete(@PathVariable Long id) {
+        try {
+            service.delete(id);
+            return ResponseEntity.ok("Đã xóa ChargingPoint ID: " + id);
+        } catch (jakarta.persistence.EntityNotFoundException e) {
+            return ResponseEntity.status(404).body(e.getMessage());
+        }
     }
 }

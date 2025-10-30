@@ -5,6 +5,6 @@ import org.springframework.stereotype.Repository;
 import project.code.model.ChargingStation;
 
 @Repository
-public interface ChargingStationRepository extends JpaRepository<ChargingStation, String> {
+public interface ChargingStationRepository extends JpaRepository<ChargingStation, Long> {
     
 }

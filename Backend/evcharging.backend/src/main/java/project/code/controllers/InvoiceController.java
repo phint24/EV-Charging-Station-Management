@@ -1,10 +1,12 @@
 package project.code.controllers;
 
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import project.code.model.Invoice;
 import project.code.services.InvoiceService;
+import project.code.dto.PayInvoiceRequest;
+import jakarta.validation.Valid;
 
 import java.util.List;
 import java.util.Optional;
@@ -12,10 +14,10 @@ import java.util.Optional;
 @RestController
 @RequestMapping("/api/invoices")
 @CrossOrigin(origins = "*")
+@RequiredArgsConstructor
 public class InvoiceController {
 
-    @Autowired
-    private InvoiceService invoiceService;
+    private final InvoiceService invoiceService;
 
     @GetMapping
     public ResponseEntity<List<Invoice>> getAllInvoices() {
@@ -23,42 +25,29 @@ public class InvoiceController {
     }
 
     @GetMapping("/{invoiceId}")
-    public ResponseEntity<?> getInvoiceById(@PathVariable String invoiceId) {
+    public ResponseEntity<?> getInvoiceById(@PathVariable Long invoiceId) {
         Optional<Invoice> invoice = invoiceService.getInvoiceById(invoiceId);
         return invoice.isPresent() ? ResponseEntity.ok(invoice.get())
                 : ResponseEntity.status(404).body("Không tìm thấy hóa đơn");
     }
 
-    @PostMapping
-    public ResponseEntity<Invoice> createInvoice(@RequestBody Invoice invoice) {
-        return ResponseEntity.status(201).body(invoiceService.createInvoice(invoice));
-    }
-
-    @PutMapping("/{invoiceId}")
-    public ResponseEntity<?> updateInvoice(@PathVariable String invoiceId, @RequestBody Invoice invoice) {
-        Invoice updated = invoiceService.updateInvoice(invoiceId, invoice);
-        return updated != null ? ResponseEntity.ok(updated)
-                : ResponseEntity.status(404).body("Không tìm thấy hóa đơn để cập nhật");
-    }
-
     @DeleteMapping("/{invoiceId}")
-    public ResponseEntity<String> deleteInvoice(@PathVariable String invoiceId) {
+    public ResponseEntity<String> deleteInvoice(@PathVariable Long invoiceId) {
         boolean deleted = invoiceService.deleteInvoice(invoiceId);
         return deleted ? ResponseEntity.ok("Đã xoá hóa đơn thành công")
                 : ResponseEntity.status(404).body("Không tìm thấy hóa đơn để xoá");
     }
 
-    @PostMapping("/{invoiceId}/generate")
-    public ResponseEntity<String> generateInvoice(@PathVariable String invoiceId, @RequestParam String session) {
-        boolean success = invoiceService.generateInvoice(invoiceId, session);
-        return success ? ResponseEntity.ok("Đã tạo hóa đơn thành công")
-                : ResponseEntity.status(404).body("Không tìm thấy hóa đơn để tạo");
-    }
+    @PostMapping("/{invoiceId}/pay")
+    public ResponseEntity<?> payInvoice(
+            @PathVariable Long invoiceId,
+            @Valid @RequestBody PayInvoiceRequest request) {
 
-    @GetMapping("/{invoiceId}/info")
-    public ResponseEntity<String> getInvoiceInfo(@PathVariable String invoiceId) {
-        Optional<String> info = invoiceService.getInvoiceInfo(invoiceId);
-        return info.isPresent() ? ResponseEntity.ok(info.get())
-                : ResponseEntity.status(404).body("Không tìm thấy thông tin hóa đơn");
+        try {
+            Invoice paidInvoice = invoiceService.payInvoice(invoiceId, request.paymentMethodId());
+            return ResponseEntity.ok(paidInvoice);
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
     }
 }

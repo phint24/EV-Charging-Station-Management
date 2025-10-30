@@ -1,10 +1,12 @@
 package project.code.controllers;
 
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import project.code.model.PaymentMethod;
 import project.code.services.PaymentMethodService;
+import project.code.dto.CreatePaymentMethodRequest;
+import jakarta.validation.Valid;
 
 import java.util.List;
 import java.util.Optional;
@@ -12,10 +14,10 @@ import java.util.Optional;
 @RestController
 @RequestMapping("/api/payment-methods")
 @CrossOrigin(origins = "*")
+@RequiredArgsConstructor // (3) Dùng Lombok thay vì @Autowired
 public class PaymentMethodController {
 
-    @Autowired
-    private PaymentMethodService paymentMethodService;
+    private final PaymentMethodService paymentMethodService;
 
     @GetMapping
     public ResponseEntity<List<PaymentMethod>> getAllPaymentMethods() {
@@ -30,15 +32,10 @@ public class PaymentMethodController {
     }
 
     @PostMapping
-    public ResponseEntity<PaymentMethod> createPaymentMethod(@RequestBody PaymentMethod paymentMethod) {
-        return ResponseEntity.status(201).body(paymentMethodService.createPaymentMethod(paymentMethod));
-    }
+    public ResponseEntity<PaymentMethod> createPaymentMethod(
+            @Valid @RequestBody CreatePaymentMethodRequest request) {
 
-    @PutMapping("/{methodId}")
-    public ResponseEntity<?> updatePaymentMethod(@PathVariable String methodId, @RequestBody PaymentMethod paymentMethod) {
-        PaymentMethod updated = paymentMethodService.updatePaymentMethod(methodId, paymentMethod);
-        return updated != null ? ResponseEntity.ok(updated)
-                : ResponseEntity.status(404).body("Không tìm thấy phương thức thanh toán để cập nhật");
+        return ResponseEntity.status(201).body(paymentMethodService.createPaymentMethod(request));
     }
 
     @DeleteMapping("/{methodId}")

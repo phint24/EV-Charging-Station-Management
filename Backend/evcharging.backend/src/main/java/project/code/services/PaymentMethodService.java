@@ -1,18 +1,24 @@
 package project.code.services;
 
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import project.code.model.EVDriver;
 import project.code.model.PaymentMethod;
+import project.code.repository.EVDriverRepository;
 import project.code.repository.PaymentMethodRepository;
+
+import project.code.dto.CreatePaymentMethodRequest;
 
 import java.util.List;
 import java.util.Optional;
 
 @Service
+@RequiredArgsConstructor // (4) Dùng Lombok
 public class PaymentMethodService {
 
-    @Autowired
-    private PaymentMethodRepository paymentMethodRepository;
+    private final PaymentMethodRepository paymentMethodRepository;
+    private final EVDriverRepository evDriverRepository;
 
     public List<PaymentMethod> getAllPaymentMethods() {
         return paymentMethodRepository.findAll();
@@ -22,19 +28,29 @@ public class PaymentMethodService {
         return paymentMethodRepository.findById(methodId);
     }
 
-    public PaymentMethod createPaymentMethod(PaymentMethod paymentMethod) {
-        return paymentMethodRepository.save(paymentMethod);
-    }
+    @Transactional // (6) Dùng Transactional
+    public PaymentMethod createPaymentMethod(CreatePaymentMethodRequest request) {
 
-    public PaymentMethod updatePaymentMethod(String methodId, PaymentMethod updatedPaymentMethod) {
-        return paymentMethodRepository.findById(methodId)
-                .map(paymentMethod -> {
-                    paymentMethod.setUserId(updatedPaymentMethod.getUserId());
-                    paymentMethod.setType(updatedPaymentMethod.getType());
-                    paymentMethod.setProvider(updatedPaymentMethod.getProvider());
-                    paymentMethod.setDefault(updatedPaymentMethod.isDefault());
-                    return paymentMethodRepository.save(paymentMethod);
-                }).orElse(null);
+        // Tìm tài xế (EVDriver profile)
+        EVDriver driver = evDriverRepository.findById(request.driverId())
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy EVDriver với ID: " + request.driverId()));
+
+        // Nếu request yêu cầu "setDefault",
+        // hãy tìm và bỏ 'default' của phương thức cũ
+        if (request.isDefault()) {
+            unsetOldDefaultMethod(driver);
+        }
+
+        // Tạo đối tượng
+        PaymentMethod paymentMethod = PaymentMethod.builder()
+                .methodId(request.methodId())
+                .driver(driver)
+                .type(request.type())
+                .provider(request.provider())
+                .isDefault(request.isDefault())
+                .build();
+
+        return paymentMethodRepository.save(paymentMethod);
     }
 
     public boolean deletePaymentMethod(String methodId) {
@@ -45,22 +61,31 @@ public class PaymentMethodService {
         return false;
     }
 
+    @Transactional
     public boolean setDefaultPaymentMethod(String methodId) {
         Optional<PaymentMethod> optionalPaymentMethod = paymentMethodRepository.findById(methodId);
+
         if (optionalPaymentMethod.isPresent()) {
-            PaymentMethod paymentMethod = optionalPaymentMethod.get();
-            paymentMethod.setDefault(true);
-            paymentMethodRepository.save(paymentMethod);
-            // Reset other methods for the same user to false (if needed)
-            paymentMethodRepository.findByUserId(paymentMethod.getUserId())
-                    .stream()
-                    .filter(pm -> !pm.getMethodId().equals(methodId))
-                    .forEach(pm -> {
-                        pm.setDefault(false);
-                        paymentMethodRepository.save(pm);
-                    });
+            PaymentMethod newDefaultMethod = optionalPaymentMethod.get();
+            EVDriver driver = newDefaultMethod.getDriver();
+
+            // 1. Bỏ 'default' của phương thức cũ (nếu có)
+            unsetOldDefaultMethod(driver);
+
+            // 2. Đặt 'default' cho phương thức mới
+            newDefaultMethod.setDefault(true);
+            paymentMethodRepository.save(newDefaultMethod);
             return true;
         }
         return false;
+    }
+
+    private void unsetOldDefaultMethod(EVDriver driver) {
+        Optional<PaymentMethod> oldDefaultOpt = paymentMethodRepository.findByDriverAndIsDefault(driver, true);
+
+        oldDefaultOpt.ifPresent(oldDefault -> {
+            oldDefault.setDefault(false);
+            paymentMethodRepository.save(oldDefault);
+        });
     }
 }
