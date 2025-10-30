@@ -3,6 +3,8 @@ package project.code.repository;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 import project.code.model.SubscriptionPackage;
+// (1) IMPORT ENUM MÀ MODEL SỬ DỤNG
+import project.code.model.enums.SubscriptionType;
 
 import java.util.List;
 import java.util.Optional;
@@ -16,8 +18,8 @@ public interface SubscriptionPackageRepository extends JpaRepository<Subscriptio
     // Tìm theo tên chứa từ khóa (không phân biệt hoa thường)
     List<SubscriptionPackage> findByNameContainingIgnoreCase(String keyword);
 
-    // Tìm theo loại gói (ví dụ: "monthly", "annual", "payg")
-    List<SubscriptionPackage> findByType(String type);
+    // (2) SỬA LỖI: Đổi tham số từ String sang Enum
+    List<SubscriptionPackage> findByType(SubscriptionType type);
 
     // Tìm theo khoảng giá [min, max]
     List<SubscriptionPackage> findByPriceBetween(Double minPrice, Double maxPrice);
@@ -46,6 +48,6 @@ public interface SubscriptionPackageRepository extends JpaRepository<Subscriptio
     // Lấy tất cả sắp xếp theo durationDays tăng dần
     List<SubscriptionPackage> findAllByOrderByDurationDaysAsc();
 
-    // Tìm gói theo type và sắp xếp theo giá tăng dần
-    List<SubscriptionPackage> findByTypeOrderByPriceAsc(String type);
+    // (3) SỬA LỖI: Đổi tham số từ String sang Enum
+    List<SubscriptionPackage> findByTypeOrderByPriceAsc(SubscriptionType type);
 }

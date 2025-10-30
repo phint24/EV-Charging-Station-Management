@@ -1,24 +1,25 @@
 package project.code.services;
 
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import project.code.model.ChargingStation;
+import project.code.model.ChargingStation.StationStatus;
 import project.code.repository.ChargingStationRepository;
 
 import java.util.List;
 import java.util.Optional;
 
 @Service
+@RequiredArgsConstructor
 public class ChargingStationService {
 
-    @Autowired
-    private ChargingStationRepository repository;
+    private final ChargingStationRepository repository;
 
     public List<ChargingStation> getAll() {
         return repository.findAll();
     }
 
-    public Optional<ChargingStation> getById(String id) {
+    public Optional<ChargingStation> getById(Long id) {
         return repository.findById(id);
     }
 
@@ -26,7 +27,7 @@ public class ChargingStationService {
         return repository.save(station);
     }
 
-    public ChargingStation update(String id, ChargingStation newStation) {
+    public ChargingStation update(Long id, ChargingStation newStation) {
         return repository.findById(id)
                 .map(station -> {
                     station.setName(newStation.getName());
@@ -39,14 +40,16 @@ public class ChargingStationService {
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy ChargingStation ID: " + id));
     }
 
-    public void delete(String id) {
+    public void delete(Long id) {
         repository.deleteById(id);
     }
 
-    public ChargingStation updateStatus(String id, String status) {
+    public ChargingStation updateStatus(Long id, StationStatus status) {
         ChargingStation station = repository.findById(id)
                 .orElseThrow(() -> new RuntimeException("ChargingStation không tồn tại: " + id));
-        station.updateStatus(status);
+
+        station.setStatus(status);
+
         return repository.save(station);
     }
 }

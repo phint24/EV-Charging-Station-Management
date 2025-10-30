@@ -1,23 +1,30 @@
 package project.code.model;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.Id;
-import jakarta.persistence.Table;
 import java.time.LocalDateTime;
+import jakarta.persistence.*;
+import lombok.*;
+import project.code.model.enums.InvoiceStatus;
 
 @Entity
 @Table(name = "invoices")
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
 public class Invoice {
+
     @Id
-    @Column(name = "invoice_id", nullable = false, length = 50)
-    private String invoiceId;
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "invoice_id")
+    private Long invoiceId;
 
-    @Column(name = "session_id", nullable = false, length = 50)
-    private String sessionId;
+    @OneToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "session_id", nullable = false, unique = true)
+    private ChargeSession chargeSession;
 
-    @Column(name = "driver_id", nullable = false, length = 50)
-    private String driverId;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "driver_id", nullable = false)
+    private EVDriver driver;
 
     @Column(name = "issue_date", nullable = false)
     private LocalDateTime issueDate;
@@ -28,103 +35,11 @@ public class Invoice {
     @Column(name = "amount", nullable = false)
     private double amount;
 
-    @Column(name = "payment_method", length = 50)
-    private String paymentMethod;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "payment_method_id")
+    private PaymentMethod paymentMethod;
 
+    @Enumerated(EnumType.STRING)
     @Column(name = "status", nullable = false, length = 50)
-    private String status;
-
-    public Invoice() {
-    }
-
-    public Invoice(String invoiceId, String sessionId, String driverId, LocalDateTime issueDate, 
-                   double totalEnergy, double amount, String paymentMethod, String status) {
-        this.invoiceId = invoiceId;
-        this.sessionId = sessionId;
-        this.driverId = driverId;
-        this.issueDate = issueDate;
-        this.totalEnergy = totalEnergy;
-        this.amount = amount;
-        this.paymentMethod = paymentMethod;
-        this.status = status;
-    }
-
-    public void generateInvoice(String session, ChargeSession chargeSession) {
-        // Logic to generate invoice (to be implemented in service layer)
-    }
-
-    public String getInvoiceInfo() {
-        return "Invoice ID: " + invoiceId + ", Amount: " + amount + ", Status: " + status;
-    }
-
-    public String getInvoiceId() {
-        return invoiceId;
-    }
-
-    public void setInvoiceId(String invoiceId) {
-        this.invoiceId = invoiceId;
-    }
-
-    public String getSessionId() {
-        return sessionId;
-    }
-
-    public void setSessionId(String sessionId) {
-        this.sessionId = sessionId;
-    }
-
-    public String getDriverId() {
-        return driverId;
-    }
-
-    public void setDriverId(String driverId) {
-        this.driverId = driverId;
-    }
-
-    public LocalDateTime getIssueDate() {
-        return issueDate;
-    }
-
-    public void setIssueDate(LocalDateTime issueDate) {
-        this.issueDate = issueDate;
-    }
-
-    public double getTotalEnergy() {
-        return totalEnergy;
-    }
-
-    public void setTotalEnergy(double totalEnergy) {
-        this.totalEnergy = totalEnergy;
-    }
-
-    public double getAmount() {
-        return amount;
-    }
-
-    public void setAmount(double amount) {
-        this.amount = amount;
-    }
-
-    public String getPaymentMethod() {
-        return paymentMethod;
-    }
-
-    public void setPaymentMethod(String paymentMethod) {
-        this.paymentMethod = paymentMethod;
-    }
-
-    public String getStatus() {
-        return status;
-    }
-
-    public void setStatus(String status) {
-        this.status = status;
-    }
-
-    @Override
-    public String toString() {
-        return "Invoice(invoiceId=" + invoiceId + ", sessionId=" + sessionId + ", driverId=" + driverId + 
-               ", issueDate=" + issueDate + ", totalEnergy=" + totalEnergy + ", amount=" + amount + 
-               ", paymentMethod=" + paymentMethod + ", status=" + status + ")";
-    }
+    private InvoiceStatus status;
 }

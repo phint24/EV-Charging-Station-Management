@@ -1,9 +1,10 @@
 package project.code.controllers;
 
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import project.code.model.ChargingStation;
+import project.code.model.ChargingStation.StationStatus;
 import project.code.services.ChargingStationService;
 
 import java.util.List;
@@ -11,10 +12,10 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/charging-stations")
 @CrossOrigin(origins = "*")
+@RequiredArgsConstructor
 public class ChargingStationController {
 
-    @Autowired
-    private ChargingStationService service;
+    private final ChargingStationService service;
 
     @GetMapping
     public List<ChargingStation> getAll() {
@@ -22,7 +23,7 @@ public class ChargingStationController {
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<ChargingStation> getById(@PathVariable String id) {
+    public ResponseEntity<ChargingStation> getById(@PathVariable Long id) {
         return service.getById(id)
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
@@ -34,7 +35,7 @@ public class ChargingStationController {
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<ChargingStation> update(@PathVariable String id, @RequestBody ChargingStation newStation) {
+    public ResponseEntity<ChargingStation> update(@PathVariable Long id, @RequestBody ChargingStation newStation) {
         try {
             return ResponseEntity.ok(service.update(id, newStation));
         } catch (RuntimeException e) {
@@ -43,7 +44,8 @@ public class ChargingStationController {
     }
 
     @PatchMapping("/{id}/status")
-    public ResponseEntity<ChargingStation> updateStatus(@PathVariable String id, @RequestParam String status) {
+    public ResponseEntity<ChargingStation> updateStatus(@PathVariable Long id,
+                                                        @RequestParam StationStatus status) {
         try {
             return ResponseEntity.ok(service.updateStatus(id, status));
         } catch (RuntimeException e) {
@@ -52,7 +54,7 @@ public class ChargingStationController {
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> delete(@PathVariable String id) {
+    public ResponseEntity<Void> delete(@PathVariable Long id) {
         service.delete(id);
         return ResponseEntity.noContent().build();
     }
