@@ -19,12 +19,27 @@ import "../../styles/globals.css"
 interface WalletPanelProps {
   balance: number;
   onTopUp: (amount: number, method: 'card' | 'bank') => void;
+  isOpen?: boolean;
+  onOpenChange?: (open: boolean) => void; // ← THÊM DÒNG NÀY
 }
 
-export function WalletPanel({ balance, onTopUp }: WalletPanelProps) {
-  const [isTopUpOpen, setIsTopUpOpen] = useState(false);
+export function WalletPanel({ balance, onTopUp, isOpen: externalIsOpen, onOpenChange }: WalletPanelProps) {
+  // const [isTopUpOpen, setIsTopUpOpen] = useState(false);
+  const [internalIsTopUpOpen, setInternalIsOpen] = useState(false);
   const [amount, setAmount] = useState('');
   const [selectedMethod, setSelectedMethod] = useState<'card' | 'bank'>('card');
+
+  // ← THÊM ĐOẠN NÀY XUỐNG DƯỚI
+  // Use external control if provided, otherwise use internal state
+  const isTopUpOpen = externalIsOpen !== undefined ? externalIsOpen : internalIsTopUpOpen;
+  const setIsTopUpOpen = (open: boolean) => {
+    if (onOpenChange) {
+      onOpenChange(open);
+    } else {
+      setInternalIsOpen(open);
+    }
+  };
+
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(amount);

@@ -13,7 +13,7 @@
 import { useState } from 'react';
 import { Toaster } from './components/ui/sonner';
 import { TopNav } from './components/layout/TopNav';
-import { SideNav, driverLinks, staffLinks, adminLinks } from "./components/layout/sideNav"
+import { SideNav, driverLinks, staffLinks, adminLinks } from "./components/layout/SideNav"
 import { Landing } from './pages/Landing';
 import { Login } from './pages/auth/Login';
 import { DriverDashboard } from './pages/driver/DriverDashboard';
@@ -30,8 +30,14 @@ export default function App() {
   const [userRole, setUserRole] = useState<UserRole>(null);
   const [sideNavCollapsed, setSideNavCollapsed] = useState(false);
   const [walletBalance] = useState(currentUser.walletBalance);
+  const [isWalletDialogOpen, setIsWalletDialogOpen] = useState(false); // ← THÊM DÒNG NÀY
 
   const handleNavigate = (path:any) => {
+    // Kiểm tra nếu click vào wallet
+    if (path === '/driver/wallet') {
+      setIsWalletDialogOpen(true); // Mở dialog ví
+      return;
+    }
     setCurrentPath(path);
 
     // Auto-detect role from path for demo purposes
@@ -93,11 +99,17 @@ export default function App() {
     // Driver pages
     if (currentPath.startsWith('/driver/station/')) {
       const stationId = currentPath.split('/').pop() || '';
-      return <StationDetail stationId={stationId} onNavigate={handleNavigate} />;
+      return <StationDetail stationId={stationId} onNavigate={handleNavigate} />;  // ← Trả về đúng component
     }
     
     if (currentPath.startsWith('/driver')) {
-      return <DriverDashboard onNavigate={handleNavigate} />;
+      return (
+    <DriverDashboard 
+      onNavigate={handleNavigate}
+      isWalletDialogOpen={isWalletDialogOpen}        // ← Thêm dòng này
+      onWalletDialogChange={setIsWalletDialogOpen}   // ← Thêm dòng này
+    />
+  );
     }
 
     // Staff pages

@@ -14,9 +14,11 @@ import { toast } from 'sonner';
 import "../../styles/globals.css"
 interface DriverDashboardProps {
   onNavigate: (path: string) => void;
+  isWalletDialogOpen?: boolean; // ← THÊM DÒNG NÀY
+  onWalletDialogChange?: (open: boolean) => void; // ← THÊM DÒNG NÀY
 }
 
-export function DriverDashboard({ onNavigate }: DriverDashboardProps) {
+export function DriverDashboard({ onNavigate, isWalletDialogOpen, onWalletDialogChange }: DriverDashboardProps) {
   const [hasActiveSession] = useState(true); // Demo: set to true to show active session
   const [walletBalance, setWalletBalance] = useState(currentUser.walletBalance);
 
@@ -137,7 +139,12 @@ export function DriverDashboard({ onNavigate }: DriverDashboardProps) {
         {/* Right Column - Wallet and Quick Actions */}
         <div className="space-y-6">
           {/* Wallet */}
-          <WalletPanel balance={walletBalance} onTopUp={handleTopUp} />
+          <WalletPanel 
+          balance={walletBalance} 
+          onTopUp={handleTopUp} 
+          isOpen={isWalletDialogOpen}              // ← THÊM DÒNG NÀY
+          onOpenChange={onWalletDialogChange}      // ← THÊM DÒNG NÀY
+          />
 
           {/* Subscription */}
           <Card className="p-4 rounded-2xl">
