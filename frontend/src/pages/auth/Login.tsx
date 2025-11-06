@@ -7,25 +7,18 @@ import { Card } from '../../components/ui/card';
 import { toast } from 'sonner';
 import "../../styles/globals.css";
 
-// (1) Import các hàm API
 import { apiLogin, setAuthToken, AuthResponse } from '../../services/AuthAPI';
 import axios from 'axios';
 
-// (2) Định nghĩa kiểu vai trò
 type ApiRole = 'ROLE_ADMIN' | 'ROLE_CSSTAFF' | 'ROLE_EVDRIVER';
 type AppRole = 'driver' | 'staff' | 'admin';
 
-/**
- * Chuyển đổi vai trò từ Backend (ROLE_EVDRIVER) sang vai trò của Frontend (driver)
- */
 const normalizeRole = (apiRole: ApiRole): AppRole => {
     if (apiRole === 'ROLE_EVDRIVER') return 'driver';
     if (apiRole === 'ROLE_CSSTAFF') return 'staff';
     if (apiRole === 'ROLE_ADMIN') return 'admin';
     return 'driver'; // Mặc định
 };
-
-// (3) XÓA BỎ DEMO_USERS (MOCK DATA)
 
 interface LoginProps {
     onLogin: (role: AppRole) => void;
@@ -37,9 +30,6 @@ export function Login({ onLogin, onNavigate }: LoginProps) {
     const [password, setPassword] = useState('');
     const [isLoading, setIsLoading] = useState(false);
 
-    /**
-     * Hàm logic đăng nhập chính (Giữ nguyên)
-     */
     const performLogin = async (loginEmail: string, loginPassword: string) => {
         setIsLoading(true);
         try {
@@ -70,9 +60,6 @@ export function Login({ onLogin, onNavigate }: LoginProps) {
         }
     };
 
-    /**
-     * Hàm handleSubmit cho form đăng nhập thật (Giữ nguyên)
-     */
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
         if (!email || !password) {
@@ -81,8 +68,6 @@ export function Login({ onLogin, onNavigate }: LoginProps) {
         }
         performLogin(email, password);
     };
-
-    // (4) XÓA BỎ HÀM handleQuickLogin (MOCK LOGIC)
 
     return (
         <div className="min-h-screen bg-gradient-to-br from-[#0f766e] to-[#0ea5a4] flex items-center justify-center p-4">
@@ -142,9 +127,6 @@ export function Login({ onLogin, onNavigate }: LoginProps) {
                     </Button>
                 </form>
 
-                {/* (5) XÓA BỎ Divider VÀ CÁC NÚT Quick Login */}
-
-                {/* Sign Up Link */}
                 <p className="text-center text-sm text-gray-600 mt-6">
                     Don't have an account?{' '}
                     <a

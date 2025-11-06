@@ -1,21 +1,10 @@
-/**
- * Main App Component
- * Handles routing and application state
- * 
- * Routes:
- * - / : Landing page
- * - /auth/login : Login page
- * - /driver/dashboard : Driver dashboard
- * - /staff/dashboard : Staff dashboard
- * - /admin/dashboard : Admin dashboard
- */
-
 import { useState } from 'react';
 import { Toaster } from './components/ui/sonner';
 import { TopNav } from './components/layout/TopNav';
 import { SideNav, driverLinks, staffLinks, adminLinks } from "./components/layout/SideNav"
 import { Landing } from './pages/Landing';
 import { Login } from './pages/auth/Login';
+import { Register } from './pages/auth/Register';
 import { DriverDashboard } from './pages/driver/DriverDashboard';
 import { StationDetail } from './pages/driver/StationDetail';
 import { StaffDashboard } from './pages/staff/StaffDashboard';
@@ -30,17 +19,15 @@ export default function App() {
   const [userRole, setUserRole] = useState<UserRole>(null);
   const [sideNavCollapsed, setSideNavCollapsed] = useState(false);
   const [walletBalance] = useState(currentUser.walletBalance);
-  const [isWalletDialogOpen, setIsWalletDialogOpen] = useState(false); // ← THÊM DÒNG NÀY
+  const [isWalletDialogOpen, setIsWalletDialogOpen] = useState(false);
 
   const handleNavigate = (path:any) => {
-    // Kiểm tra nếu click vào wallet
     if (path === '/driver/wallet') {
-      setIsWalletDialogOpen(true); // Mở dialog ví
+      setIsWalletDialogOpen(true);
       return;
     }
     setCurrentPath(path);
 
-    // Auto-detect role from path for demo purposes
     if (path.startsWith('/driver')) {
       setUserRole('driver');
     } else if (path.startsWith('/staff')) {
@@ -52,7 +39,6 @@ export default function App() {
 
   const handleLogin = (role: UserRole) => {
     setUserRole(role);
-    // Navigate to appropriate dashboard based on role
     if (role === 'driver') {
       setCurrentPath('/driver/dashboard');
     } else if (role === 'staff') {
@@ -67,10 +53,8 @@ export default function App() {
     setCurrentPath('/');
   };
 
-  // Determine if we should show navigation
   const showNav = userRole && !currentPath.startsWith('/auth') && currentPath !== '/';
 
-  // Get navigation links based on role
   const getNavLinks = () => {
     switch (userRole) {
       case 'driver':
@@ -84,19 +68,20 @@ export default function App() {
     }
   };
 
-  // Render page based on current path
   const renderPage = () => {
     // Auth pages
-    if (currentPath === '/auth/login' || currentPath === '/auth/register') {
+    if (currentPath === '/auth/login') {
       return <Login onLogin={handleLogin} onNavigate={handleNavigate} />;
     }
 
-    // Landing page
+    if (currentPath === '/auth/register') {
+        return <Register onRegister={handleLogin} onNavigate={handleNavigate} />;
+    }
+
     if (currentPath === '/') {
       return <Landing onNavigate={handleNavigate} />;
     }
 
-    // Driver pages
     if (currentPath.startsWith('/driver/station/')) {
       const stationId = currentPath.split('/').pop() || '';
       return <StationDetail stationId={stationId} onNavigate={handleNavigate} />;  // ← Trả về đúng component
@@ -106,8 +91,8 @@ export default function App() {
       return (
     <DriverDashboard 
       onNavigate={handleNavigate}
-      isWalletDialogOpen={isWalletDialogOpen}        // ← Thêm dòng này
-      onWalletDialogChange={setIsWalletDialogOpen}   // ← Thêm dòng này
+      isWalletDialogOpen={isWalletDialogOpen}
+      onWalletDialogChange={setIsWalletDialogOpen}
     />
   );
     }
