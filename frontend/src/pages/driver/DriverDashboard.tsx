@@ -1,5 +1,3 @@
-
-
 import { useState } from 'react';
 import { Card } from '../../components/ui/card';
 import { Badge } from '../../components/ui/badge';
@@ -14,12 +12,12 @@ import { toast } from 'sonner';
 import "../../styles/globals.css"
 interface DriverDashboardProps {
   onNavigate: (path: string) => void;
-  isWalletDialogOpen?: boolean; // ← THÊM DÒNG NÀY
-  onWalletDialogChange?: (open: boolean) => void; // ← THÊM DÒNG NÀY
+  isWalletDialogOpen?: boolean;
+  onWalletDialogChange?: (open: boolean) => void;
 }
 
 export function DriverDashboard({ onNavigate, isWalletDialogOpen, onWalletDialogChange }: DriverDashboardProps) {
-  const [hasActiveSession] = useState(true); // Demo: set to true to show active session
+  const [hasActiveSession] = useState(true);
   const [walletBalance, setWalletBalance] = useState(currentUser.walletBalance);
 
   const handleStationClick = (stationId: string) => {
