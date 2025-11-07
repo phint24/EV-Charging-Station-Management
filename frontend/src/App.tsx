@@ -13,7 +13,7 @@
 import { useState } from 'react';
 import { Toaster } from './components/ui/sonner';
 import { TopNav } from './components/layout/TopNav';
-import { SideNav, driverLinks, staffLinks, adminLinks } from "./components/layout/sideNav"
+import { SideNav, driverLinks, staffLinks, adminLinks } from "./components/layout/SideNav"
 import { Landing } from './pages/Landing';
 import { Login } from './pages/auth/Login';
 import { DriverDashboard } from './pages/driver/DriverDashboard';
