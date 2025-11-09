@@ -3,136 +3,54 @@ package project.code.model;
 import java.time.LocalDateTime;
 
 import jakarta.persistence.*;
+import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
-
-import project.code.model.EVDriver;
+import lombok.NoArgsConstructor;
+import project.code.model.enums.SessionStatus;
 
 @Entity
-@Table(name = "chargeSessions")
+@Table(name = "charge_sessions")
 @Data
 @Builder
+@NoArgsConstructor
+@AllArgsConstructor
 public class ChargeSession {
-     @Id
-     @Column(name= "session_id")
-     private String sessionId;
 
-     @Column(name="station_id", nullable = false)
-     private String stationId;
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name= "session_id")
+    private Long sessionId;
 
-     @Column(name= "charging_point_id", nullable = false)
-     private String chargingPointId;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "station_id", nullable = false)
+    private ChargingStation station;
 
-     @Column(name="start_time", length = 100)
-     private LocalDateTime startTime;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "charging_point_id", nullable = false)
+    private ChargingPoint chargingPoint;
 
-     @Column(name="end_time", length = 100)
-     private LocalDateTime endTime;
-     @Column(name="energy_used", length = 100)
-     private double energyUsed;
-     @Column(length = 100)
-     private double cost;
+    @Column(name="start_time")
+    private LocalDateTime startTime;
 
-     @Column(length = 100)
-     private String status;
+    @Column(name="end_time")
+    private LocalDateTime endTime;
 
-    @ManyToOne
+    @Column(name="energy_used")
+    private double energyUsed;
+
+    @Column
+    private double cost;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private SessionStatus status;
+
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "driver_id", nullable = false)
     private EVDriver driver;
 
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "vehicle_id")
     private Vehicle vehicle;
-
-    // Constructors
-    public ChargeSession() {}
-
-    public ChargeSession(
-        String sessionId, String stationId, String chargingPointId,
-        LocalDateTime startTime, LocalDateTime endTime,
-        double energyUsed, double cost, String status, EVDriver driver, Vehicle vehicle) {
-        this.sessionId = sessionId;
-        this.stationId = stationId;
-        this.chargingPointId = chargingPointId;
-        this.startTime = startTime;
-        this.endTime = endTime;
-        this.energyUsed = energyUsed;
-        this.cost = cost;
-        this.status = status;
-        this.driver = driver;
-        this.vehicle = vehicle;
-    }
-    // End Constructors
-
-    // Methods
-    public void startSession(String driverId, String chargeId) {
-        System.out.println("Phiên sạc được bắt đầu bởi tài xế: " + driverId + " sử dụng trạm sạc: " + chargeId);
-    }
-
-    public void endSession() {
-        System.out.println("Phiên sạc đã kết thúc.");
-    }
-
-    public double calculateCost(double ratePerKWh) {
-        return this.energyUsed * ratePerKWh;
-    }
-    // End Methods
-
-    // Các Hàm Getters - Setters
-    public String getSessionId() {
-         return sessionId; 
-    }
-    public void setSessionId(String sessionId) { 
-        this.sessionId = sessionId; 
-    }
-
-    public String getStationId() {
-         return stationId; 
-    }
-    public void setStationId(String stationId) {
-         this.stationId = stationId;
-    }
-
-    public String getChargingPointId() {
-         return chargingPointId; 
-    }
-    public void setChargingPointId(String chargingPointId) {
-         this.chargingPointId = chargingPointId; 
-    }
-
-    public LocalDateTime getStartTime() {
-         return startTime; 
-    }
-    public void setStartTime(LocalDateTime startTime) {
-         this.startTime = startTime; 
-    }
-
-    public LocalDateTime getEndTime() {
-         return endTime; 
-    }
-    public void setEndTime(LocalDateTime endTime) {
-         this.endTime = endTime; 
-    }
-
-    public double getEnergyUsed() {
-         return energyUsed; 
-    }
-    public void setEnergyUsed(double energyUsed) {
-         this.energyUsed = energyUsed; 
-    }
-
-    public double getCost() {
-         return cost; 
-    }
-    public void setCost(double cost) {
-         this.cost = cost; 
-    }
-
-    public String getStatus() {
-         return status; 
-    }
-    public void setStatus(String status) {
-         this.status = status; 
-    }
-    // End Các Hàm Getters - Setters
 }

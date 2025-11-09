@@ -1,9 +1,13 @@
 package project.code.controllers;
 
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import project.code.model.Report;
+import project.code.dto.GenerateReportRequest;
+import project.code.model.enums.ReportType;
+import jakarta.validation.Valid;
+
 import project.code.services.ReportService;
 
 import java.time.LocalDateTime;
@@ -13,10 +17,10 @@ import java.util.Optional;
 @RestController
 @RequestMapping("/api/reports")
 @CrossOrigin(origins = "*")
+@RequiredArgsConstructor
 public class ReportController {
 
-    @Autowired
-    private ReportService reportService;
+    private final ReportService reportService;
 
     // Lấy tất cả reports
     @GetMapping
@@ -24,110 +28,72 @@ public class ReportController {
         return ResponseEntity.ok(reportService.getAllReports());
     }
 
-    // Lấy report theo ID
     @GetMapping("/{reportId}")
-    public ResponseEntity<?> getReportById(@PathVariable String reportId) {
+    public ResponseEntity<?> getReportById(@PathVariable Long reportId) {
         Optional<Report> report = reportService.getReportById(reportId);
-        return report.isPresent() 
+        return report.isPresent()
                 ? ResponseEntity.ok(report.get())
                 : ResponseEntity.status(404).body("Không tìm thấy report với ID: " + reportId);
     }
 
-    // Tạo mới report
-    @PostMapping
-    public ResponseEntity<Report> createReport(@RequestBody Report report) {
-        return ResponseEntity.status(201).body(reportService.createReport(report));
-    }
-
-    // Cập nhật report
-    @PutMapping("/{reportId}")
-    public ResponseEntity<?> updateReport(@PathVariable String reportId, @RequestBody Report report) {
-        try {
-            Report updated = reportService.updateReport(reportId, report);
-            return ResponseEntity.ok(updated);
-        } catch (RuntimeException e) {
-            return ResponseEntity.status(404).body("Không tìm thấy report để cập nhật");
-        }
-    }
-
-    // Xóa report
     @DeleteMapping("/{reportId}")
-    public ResponseEntity<String> deleteReport(@PathVariable String reportId) {
+    public ResponseEntity<String> deleteReport(@PathVariable Long reportId) {
         boolean deleted = reportService.deleteReport(reportId);
-        return deleted 
+        return deleted
                 ? ResponseEntity.ok("Đã xóa report thành công")
                 : ResponseEntity.status(404).body("Không tìm thấy report để xóa");
     }
 
     // Lấy reports theo stationId
     @GetMapping("/station/{stationId}")
-    public ResponseEntity<List<Report>> getReportsByStation(@PathVariable String stationId) {
+    public ResponseEntity<List<Report>> getReportsByStation(@PathVariable Long stationId) {
         return ResponseEntity.ok(reportService.getReportsByStationId(stationId));
     }
 
-    // Lấy reports theo reportType
     @GetMapping("/type/{reportType}")
-    public ResponseEntity<List<Report>> getReportsByType(@PathVariable String reportType) {
+    public ResponseEntity<List<Report>> getReportsByType(@PathVariable ReportType reportType) {
         return ResponseEntity.ok(reportService.getReportsByType(reportType));
     }
 
     // Lấy reports theo khoảng thời gian
     @GetMapping("/period")
     public ResponseEntity<List<Report>> getReportsByPeriod(
-            @RequestParam String start, 
-            @RequestParam String end) {
-        LocalDateTime startDate = LocalDateTime.parse(start);
-        LocalDateTime endDate = LocalDateTime.parse(end);
-        return ResponseEntity.ok(reportService.getReportsByPeriod(startDate, endDate));
+            @RequestParam LocalDateTime start,
+            @RequestParam LocalDateTime end) {
+        return ResponseEntity.ok(reportService.getReportsByPeriod(start, end));
     }
 
     // Lấy reports theo station và khoảng thời gian
     @GetMapping("/station/{stationId}/period")
     public ResponseEntity<List<Report>> getReportsByStationAndPeriod(
-            @PathVariable String stationId,
-            @RequestParam String start,
-            @RequestParam String end) {
-        LocalDateTime startDate = LocalDateTime.parse(start);
-        LocalDateTime endDate = LocalDateTime.parse(end);
-        return ResponseEntity.ok(reportService.getReportsByStationAndPeriod(stationId, startDate, endDate));
+            @PathVariable Long stationId,
+            @RequestParam LocalDateTime start,
+            @RequestParam LocalDateTime end) {
+        return ResponseEntity.ok(reportService.getReportsByStationAndPeriod(stationId, start, end));
     }
 
-    // Tạo báo cáo doanh thu (revenue report)
     @PostMapping("/revenue")
-    public ResponseEntity<Report> generateRevenueReport(
-            @RequestParam String stationId,
-            @RequestParam String periodStart,
-            @RequestParam String periodEnd) {
-        LocalDateTime start = LocalDateTime.parse(periodStart);
-        LocalDateTime end = LocalDateTime.parse(periodEnd);
-        Report report = reportService.generateRevenueReport(stationId, start, end);
-        return ResponseEntity.status(201).body(report);
-    }
-
-    // Tạo báo cáo sử dụng (usage report)
-    @PostMapping("/usage")
-    public ResponseEntity<Report> generateUsageReport(
-            @RequestParam String stationId,
-            @RequestParam String periodStart,
-            @RequestParam String periodEnd) {
-        LocalDateTime start = LocalDateTime.parse(periodStart);
-        LocalDateTime end = LocalDateTime.parse(periodEnd);
-        Report report = reportService.generateUsageReport(stationId, start, end);
-        return ResponseEntity.status(201).body(report);
-    }
-
-    // Hiển thị report
-    @GetMapping("/{reportId}/display")
-    public ResponseEntity<String> displayReport(@PathVariable String reportId) {
+    public ResponseEntity<?> generateRevenueReport(
+            @Valid @RequestBody GenerateReportRequest request) {
         try {
-            reportService.displayReport(reportId);
-            return ResponseEntity.ok("Đã hiển thị report: " + reportId);
-        } catch (RuntimeException e) {
-            return ResponseEntity.status(404).body(e.getMessage());
+            Report report = reportService.generateReport(request, ReportType.REVENUE);
+            return ResponseEntity.status(201).body(report);
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
         }
     }
 
-    // Lấy report có doanh thu cao nhất
+    @PostMapping("/usage")
+    public ResponseEntity<?> generateUsageReport(
+            @Valid @RequestBody GenerateReportRequest request) {
+        try {
+            Report report = reportService.generateReport(request, ReportType.USAGE);
+            return ResponseEntity.status(201).body(report);
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
+
     @GetMapping("/top-revenue")
     public ResponseEntity<?> getTopRevenueReport() {
         Optional<Report> report = reportService.getTopRevenueReport();
@@ -136,7 +102,6 @@ public class ReportController {
                 : ResponseEntity.status(404).body("Không có report nào");
     }
 
-    // Lấy report có năng lượng cao nhất
     @GetMapping("/top-energy")
     public ResponseEntity<?> getTopEnergyReport() {
         Optional<Report> report = reportService.getTopEnergyReport();
@@ -145,19 +110,16 @@ public class ReportController {
                 : ResponseEntity.status(404).body("Không có report nào");
     }
 
-    // Lấy tất cả reports sắp xếp theo thời gian
     @GetMapping("/sorted")
     public ResponseEntity<List<Report>> getAllReportsSorted() {
         return ResponseEntity.ok(reportService.getAllReportsSortedByDate());
     }
 
-    // Lấy reports theo số phiên sạc tối thiểu
     @GetMapping("/min-sessions/{minSessions}")
     public ResponseEntity<List<Report>> getReportsByMinSessions(@PathVariable int minSessions) {
         return ResponseEntity.ok(reportService.getReportsByMinSessions(minSessions));
     }
 
-    // Lấy reports theo khoảng doanh thu
     @GetMapping("/revenue-range")
     public ResponseEntity<List<Report>> getReportsByRevenueRange(
             @RequestParam double minRevenue,

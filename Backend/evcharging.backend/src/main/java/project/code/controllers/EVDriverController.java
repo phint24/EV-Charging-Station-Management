@@ -1,71 +1,93 @@
+
 package project.code.controllers;
 
-import org.springframework.beans.factory.annotation.Autowired;
+import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
-import project.code.model.EVDriver;
+import project.code.model.User;
 import project.code.services.EVDriverService;
 
+// Import các DTO
+import project.code.dto.evdriver.EVDriverProfileDto;
+import project.code.dto.evdriver.UpdateEvDriverRequest;
+import project.code.dto.vehicle.VehicleDto;
+import project.code.dto.vehicle.CreateVehicleRequest;
+import project.code.dto.vehicle.UpdateVehicleRequest;
+
 import java.util.List;
-import java.util.Optional;
 
 @RestController
-@RequestMapping("/api/drivers")
-@CrossOrigin(origins = "*")
+@RequestMapping("/api/evdrivers")
+@RequiredArgsConstructor
+@PreAuthorize("hasRole('ROLE_EVDRIVER')")
 public class EVDriverController {
 
-    @Autowired
-    private EVDriverService driverService;
+    private final EVDriverService evDriverService;
 
-    // Lấy tất cả tài xế
-    @GetMapping
-    public ResponseEntity<List<EVDriver>> getAllDrivers() {
-        return ResponseEntity.ok(driverService.getAllDrivers());
+    @GetMapping("/me")
+    public ResponseEntity<EVDriverProfileDto> getCurrentDriverProfile() {
+        User currentUser = getCurrentUser();
+        EVDriverProfileDto profile = evDriverService.getDriverProfile(currentUser);
+        return ResponseEntity.ok(profile);
     }
 
-    // Lấy thông tin tài xế theo ID
-    @GetMapping("/{id}")
-    public ResponseEntity<?> getDriverById(@PathVariable Long id) {
-        Optional<EVDriver> driver = driverService.getDriverById(id);
-        return driver.isPresent()
-                ? ResponseEntity.ok(driver.get())
-                : ResponseEntity.status(404).body("Không tìm thấy tài xế với ID: " + id);
+    @PutMapping("/me")
+    public ResponseEntity<EVDriverProfileDto> updateCurrentDriverProfile(
+            @Valid @RequestBody UpdateEvDriverRequest request) {
+        User currentUser = getCurrentUser();
+        EVDriverProfileDto updatedProfile = evDriverService.updateDriverProfile(currentUser, request);
+        return ResponseEntity.ok(updatedProfile);
     }
 
-    // Tạo mới tài xế
-    @PostMapping
-    public ResponseEntity<?> createDriver(@RequestBody EVDriver driver) {
-        EVDriver created = driverService.saveDriver(driver);
-        return ResponseEntity.status(201).body("Đã tạo tài xế thành công với ID: " + created.getId());
+    @GetMapping("/me/vehicles")
+    public ResponseEntity<List<VehicleDto>> getCurrentDriverVehicles() {
+        User currentUser = getCurrentUser();
+        List<VehicleDto> vehicles = evDriverService.getVehicles(currentUser);
+        return ResponseEntity.ok(vehicles);
     }
 
-    // Cập nhật thông tin tài xế
-    @PutMapping("/{id}")
-    public ResponseEntity<?> updateDriver(@PathVariable Long id, @RequestBody EVDriver newDriver) {
-        Optional<EVDriver> existingDriver = driverService.getDriverById(id);
-        if (existingDriver.isPresent()) {
-            EVDriver driver = existingDriver.get();
-            driver.setName(newDriver.getName());
-            driver.setEmail(newDriver.getEmail());
-            driver.setPhoneNumber(newDriver.getPhoneNumber());
-            driver.setVehicle(newDriver.getVehicle());
-            driver.setWallet(newDriver.getWallet());
-            driverService.saveDriver(driver);
-            return ResponseEntity.ok("Đã cập nhật thông tin tài xế thành công");
-        } else {
-            return ResponseEntity.status(404).body("Không tìm thấy tài xế để cập nhật");
+    @PostMapping("/me/vehicles")
+    public ResponseEntity<VehicleDto> addVehicleToCurrentDriver(
+            @Valid @RequestBody CreateVehicleRequest request) {
+        User currentUser = getCurrentUser();
+        VehicleDto newVehicle = evDriverService.addVehicle(currentUser, request);
+        return ResponseEntity.status(HttpStatus.CREATED).body(newVehicle);
+    }
+
+    @PutMapping("/me/vehicles/{vehicleId}")
+    public ResponseEntity<?> updateVehicleForCurrentDriver(
+            @PathVariable Long vehicleId,
+            @Valid @RequestBody UpdateVehicleRequest request) {
+        User currentUser = getCurrentUser();
+        try {
+            VehicleDto updatedVehicle = evDriverService.updateVehicle(currentUser, vehicleId, request);
+            return ResponseEntity.ok(updatedVehicle);
+        } catch (RuntimeException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
         }
     }
 
-    // Xóa tài xế
-    @DeleteMapping("/{id}")
-    public ResponseEntity<String> deleteDriver(@PathVariable Long id) {
-        Optional<EVDriver> driver = driverService.getDriverById(id);
-        if (driver.isPresent()) {
-            driverService.deleteDriver(id);
-            return ResponseEntity.ok("Đã xoá tài xế thành công");
-        } else {
-            return ResponseEntity.status(404).body("Không tìm thấy tài xế để xoá");
+    @DeleteMapping("/me/vehicles/{vehicleId}")
+    public ResponseEntity<?> deleteVehicleForCurrentDriver(@PathVariable Long vehicleId) {
+        User currentUser = getCurrentUser();
+        try {
+            evDriverService.deleteVehicle(currentUser, vehicleId);
+            return ResponseEntity.noContent().build();
+        } catch (RuntimeException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
         }
+    }
+
+    private User getCurrentUser() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication == null || !authentication.isAuthenticated() || !(authentication.getPrincipal() instanceof User)) {
+            throw new RuntimeException("Không thể xác định người dùng đang đăng nhập.");
+        }
+        return (User) authentication.getPrincipal();
     }
 }
