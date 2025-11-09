@@ -16,7 +16,6 @@ import java.util.Optional;
 
 @RestController
 @RequestMapping("/api/reports")
-@CrossOrigin(origins = "*")
 @RequiredArgsConstructor
 public class ReportController {
 
