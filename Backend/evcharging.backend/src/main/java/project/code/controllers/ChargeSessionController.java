@@ -18,7 +18,6 @@ import java.util.Optional;
 
 @RestController
 @RequestMapping("/api/charge-sessions")
-@CrossOrigin(origins = "*")
 @RequiredArgsConstructor
 public class ChargeSessionController {
 
