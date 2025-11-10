@@ -18,7 +18,6 @@ import java.util.Optional;
 
 @RestController
 @RequestMapping("/api/charge-sessions")
-@CrossOrigin(origins = "*")
 @RequiredArgsConstructor
 public class ChargeSessionController {
 
@@ -36,7 +35,7 @@ public class ChargeSessionController {
                 .orElse(ResponseEntity.notFound().build());
     }
 
-    @PostMapping
+    @PostMapping("/start")
     public ResponseEntity<?> startSession(@Valid @RequestBody CreateChargeSessionRequest request) {
         try {
             ChargeSessionDto sessionDto = service.startSession(request);
