@@ -59,7 +59,6 @@ export function AdminDashboard({ onNavigate }: AdminDashboardProps) {
       bgColor: 'bg-[#0f766e]/10',
     },
   ];
-
   // Mock recent users
   const recentUsers = [
     { id: 'u-001', name: 'Nguyen Van A', email: 'nguyenvana@email.com', role: 'driver', status: 'active', joined: '2025-10-20' },
@@ -245,7 +244,7 @@ export function AdminDashboard({ onNavigate }: AdminDashboardProps) {
       </div>
 
       {/* Recent Users */}
-      <Card className="p-6 rounded-2xl">
+      {/* <Card className="p-6 rounded-2xl">
         <div className="flex items-center justify-between mb-4">
           <h2>Recent Users</h2>
           <Button variant="outline" onClick={() => onNavigate('/admin/users')}>
@@ -294,7 +293,52 @@ export function AdminDashboard({ onNavigate }: AdminDashboardProps) {
             </TableBody>
           </Table>
         </div>
-      </Card>
+      </Card> */}
+      <div>
+      <h2 className="text-xl mb-4">Recent Users</h2>
+      {loading ? (
+        <p>Loading...</p>
+      ) : (
+        <div className="rounded-2xl border overflow-hidden">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Name</TableHead>
+                <TableHead>Email</TableHead>
+                <TableHead>Role</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead>Joined</TableHead>
+                <TableHead>Actions</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {users.map((user) => (
+                <TableRow key={user.id}>
+                  <TableCell>{user.name}</TableCell>
+                  <TableCell>{user.email}</TableCell>
+                  <TableCell>
+                    <Badge variant="outline" className="capitalize">
+                      {user.role.replace('ROLE_', '').toLowerCase()}
+                    </Badge>
+                  </TableCell>
+                  <TableCell>
+                    <Badge className={user.status === 'active' ? 'bg-green-500' : 'bg-gray-500'}>
+                      {user.status || 'active'}
+                    </Badge>
+                  </TableCell>
+                  <TableCell>{user.joined || '-'}</TableCell>
+                  <TableCell>
+                    <Button size="sm" variant="ghost" onClick={() => handleEditUser(user.id)}>
+                      Edit
+                    </Button>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </div>
+      )}
+    </div>
     </div>
   );
 }

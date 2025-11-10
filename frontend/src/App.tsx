@@ -10,6 +10,8 @@ import { StationDetail } from './pages/driver/StationDetail';
 import { StaffDashboard } from './pages/staff/StaffDashboard';
 import { AdminDashboard } from './pages/admin/AdminDashboard';
 import { currentUser } from './data/sample';
+import { useEffect } from 'react';
+import { setAuthToken } from './services/AuthAPI';
 import "./styles/globals.css"
 
 type UserRole = 'driver' | 'staff' | 'admin' | null;

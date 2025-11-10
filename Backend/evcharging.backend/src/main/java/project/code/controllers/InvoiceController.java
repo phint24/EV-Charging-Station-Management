@@ -13,7 +13,7 @@ import java.util.Optional;
 
 @RestController
 @RequestMapping("/api/invoices")
-@CrossOrigin(origins = "*")
+
 @RequiredArgsConstructor
 public class InvoiceController {
 
