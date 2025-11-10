@@ -15,6 +15,7 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContaine
 import { TrendingUp, Users, MapPin, DollarSign, Zap, AlertCircle, Download, Plus } from 'lucide-react';
 import { revenueByStation, utilizationByHour } from '../../data/sample';
 import { toast } from 'sonner';
+import { exportRevenueReport } from '../../services/ReportAPI';
 
 interface AdminDashboardProps {
   onNavigate: (path: string) => void;
@@ -75,9 +76,16 @@ export function AdminDashboard({ onNavigate }: AdminDashboardProps) {
     { id: 'a-003', type: 'error', message: 'Port P2 at Vincom Mega reported faulty', time: '2 hours ago' },
   ];
 
-  const handleExportReport = () => {
-    toast.success('Downloading revenue report...');
-    // API: GET /reports/revenue/export
+  const handleExportReport = async () => {
+    try {
+      toast.success('Đang chuẩn bị tải xuống báo cáo...');
+      await exportRevenueReport();
+      toast.success('Báo cáo đã được tải xuống thành công!');
+    } catch (error) {
+      console.error('Export failed:', error);
+      toast.error('Không thể tải xuống báo cáo. Vui lòng thử lại.');
+    }
+    
   };
 
   const handleAddStation = () => {
