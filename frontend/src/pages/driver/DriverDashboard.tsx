@@ -26,7 +26,6 @@ export function DriverDashboard({ onNavigate, isWalletDialogOpen, onWalletDialog
 
   const handleStopCharging = () => {
     toast.success('Charging session stopped successfully');
-    // In production: API call to stop session
   };
 
   const handleTopUp = (amount: number, method: string) => {
