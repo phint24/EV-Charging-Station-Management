@@ -38,7 +38,7 @@ export function Login({ onLogin, onNavigate }: LoginProps) {
             const appRole = normalizeRole(response.role);
             toast.success(`Đăng nhập thành công với vai trò ${appRole}!`);
             onLogin(appRole);
-
+ 
         } catch (error) {
             console.error('Login failed:', error);
             let errorMessage = 'Đăng nhập thất bại. Vui lòng thử lại.';
