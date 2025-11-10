@@ -13,7 +13,6 @@ import java.util.Optional;
 
 @RestController
 @RequestMapping("/api/invoices")
-
 @RequiredArgsConstructor
 public class InvoiceController {
 

@@ -1,5 +1,6 @@
 
 
+
 // import { useState } from 'react';
 // import { Card } from '../../components/ui/card';
 // import { Badge } from '../../components/ui/badge';
@@ -215,6 +216,8 @@
 // }
 // src/components/DriverDashboard.tsx
 import { useState, useEffect } from 'react';
+import { useState } from 'react';
+
 import { Card } from '../../components/ui/card';
 import { Badge } from '../../components/ui/badge';
 import { Button } from '../../components/ui/button'; // <-- THÊM IMPORT NÚT
@@ -239,6 +242,7 @@ import {
 interface DriverDashboardProps {
   onNavigate: (path: string) => void;
   isWalletDialogOpen?: boolean; 
+  isWalletDialogOpen?: boolean;
   onWalletDialogChange?: (open: boolean) => void;
 }
 
@@ -247,6 +251,9 @@ export function DriverDashboard({ onNavigate, isWalletDialogOpen, onWalletDialog
   // Giờ đây 'activeSession' sẽ lưu trữ phiên sạc từ API
   const [activeSession, setActiveSession] = useState<ChargeSessionDto | null>(null);
   const [isLoadingSession, setIsLoadingSession] = useState(true); // Thêm state loading
+
+  const [hasActiveSession] = useState(true);
+
   const [walletBalance, setWalletBalance] = useState(currentUser.walletBalance);
 
 
