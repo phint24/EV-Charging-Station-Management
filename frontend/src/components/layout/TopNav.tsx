@@ -12,10 +12,8 @@ import { Badge } from '../ui/badge';
 import "../../styles/globals.css"
 import { useState, useEffect } from 'react';
 
-// (1) Import API (Đã đúng)
 import { apiGetBalance } from '../../services/DriverAPI';
 
-// (2) SỬA LỖI CHÍNH TẢ: 'ROlE...' -> 'ROLE...'
 interface TopNavProps {
     userRole: 'ROLE_EVDRIVER' | 'ROLE_ADMIN' | 'ROLE_CSSTAFF';
     userName: string;
@@ -71,7 +69,6 @@ export function TopNav({ userRole, userName, onLogout, onNavigate }: TopNavProps
 
                 {/* Right Side */}
                 <div className="flex items-center gap-2 md:gap-4">
-                    {/* (Phần này giờ sẽ hoạt động sau khi sửa lỗi) */}
                     {userRole === 'ROLE_EVDRIVER' && balance !== undefined && (
                         <Button
                             variant="ghost"
@@ -83,7 +80,7 @@ export function TopNav({ userRole, userName, onLogout, onNavigate }: TopNavProps
                         </Button>
                     )}
 
-                    {/* Notifications (Vẫn đang là data cứng) */}
+                    {/* Notifications */}
                     <DropdownMenu>
                         <DropdownMenuTrigger asChild>
                             <Button variant="ghost" size="sm" className="relative">
@@ -127,7 +124,6 @@ export function TopNav({ userRole, userName, onLogout, onNavigate }: TopNavProps
                             <DropdownMenuLabel>
                                 <div>
                                     <p>{userName}</p>
-                                    {/* (Hiển thị role đã chuẩn hóa) */}
                                     <p className="text-xs text-gray-500 capitalize">{userRole.replace('ROLE_', '').toLowerCase()}</p>
                                 </div>
                             </DropdownMenuLabel>
@@ -143,17 +139,7 @@ export function TopNav({ userRole, userName, onLogout, onNavigate }: TopNavProps
                                 </DropdownMenuItem>
                             )}
                             <DropdownMenuSeparator />
-                            <DropdownMenuLabel className="text-xs text-gray-500">Switch Role (Demo)</DropdownMenuLabel>
-                            <DropdownMenuItem onClick={() => onNavigate('/driver/dashboard')}>
-                                Switch to Driver
-                            </DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => onNavigate('/staff/dashboard')}>
-                                Switch to Staff
-                            </DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => onNavigate('/admin/dashboard')}>
-                                Switch to Admin
-                            </DropdownMenuItem>
-                            <DropdownMenuSeparator />
+
                             <DropdownMenuItem onClick={onLogout}>
                                 <LogOut className="mr-2 h-4 w-4" />
                                 Logout
