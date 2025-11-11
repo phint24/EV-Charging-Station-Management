@@ -3,11 +3,16 @@ package project.code.controllers;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import project.code.model.ChargingStation;
 import project.code.model.ChargingStation.StationStatus;
 import project.code.services.ChargingStationService;
 
+import project.code.dto.station.ChargingStationDto;
+import project.code.dto.station.CreateStationRequest;
+import project.code.dto.station.UpdateStationRequest;
+import jakarta.validation.Valid; // Import Valid
+
 import java.util.List;
+import java.util.Optional;
 
 @RestController
 @RequestMapping("/api/charging-stations")
@@ -17,36 +22,39 @@ public class ChargingStationController {
     private final ChargingStationService service;
 
     @GetMapping
-    public List<ChargingStation> getAll() {
-        return service.getAll();
+    public ResponseEntity<List<ChargingStationDto>> getAll() {
+        return ResponseEntity.ok(service.getAll());
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<ChargingStation> getById(@PathVariable Long id) {
+    public ResponseEntity<ChargingStationDto> getById(@PathVariable Long id) {
         return service.getById(id)
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
     }
 
     @PostMapping
-    public ChargingStation create(@RequestBody ChargingStation station) {
-        return service.create(station);
+    public ResponseEntity<ChargingStationDto> create(@Valid @RequestBody CreateStationRequest request) {
+        ChargingStationDto createdStation = service.create(request);
+        return ResponseEntity.status(201).body(createdStation);
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<ChargingStation> update(@PathVariable Long id, @RequestBody ChargingStation newStation) {
+    public ResponseEntity<ChargingStationDto> update(@PathVariable Long id, @Valid @RequestBody UpdateStationRequest request) {
         try {
-            return ResponseEntity.ok(service.update(id, newStation));
+            ChargingStationDto updatedStation = service.update(id, request);
+            return ResponseEntity.ok(updatedStation);
         } catch (RuntimeException e) {
             return ResponseEntity.notFound().build();
         }
     }
 
     @PatchMapping("/{id}/status")
-    public ResponseEntity<ChargingStation> updateStatus(@PathVariable Long id,
-                                                        @RequestParam StationStatus status) {
+    public ResponseEntity<ChargingStationDto> updateStatus(@PathVariable Long id,
+                                                           @RequestParam StationStatus status) {
         try {
-            return ResponseEntity.ok(service.updateStatus(id, status));
+            ChargingStationDto updatedStation = service.updateStatus(id, status);
+            return ResponseEntity.ok(updatedStation);
         } catch (RuntimeException e) {
             return ResponseEntity.notFound().build();
         }
@@ -54,7 +62,11 @@ public class ChargingStationController {
 
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> delete(@PathVariable Long id) {
-        service.delete(id);
-        return ResponseEntity.noContent().build();
+        try {
+            service.delete(id);
+            return ResponseEntity.noContent().build();
+        } catch (RuntimeException e) {
+            return ResponseEntity.notFound().build();
+        }
     }
 }
