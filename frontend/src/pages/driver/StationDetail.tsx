@@ -1,246 +1,283 @@
-
-
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { ArrowLeft, MapPin, Star, Zap, Clock, DollarSign, Navigation, Phone, Wifi, Coffee, Utensils } from 'lucide-react';
 import { Button } from '../../components/ui/button';
 import { Card } from '../../components/ui/card';
 import { Badge } from '../../components/ui/badge';
-import { BookingModal } from '../../components/booking/BookingModal';
-import { sampleStations } from '../../data/sample';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../components/ui/select';
 import { toast } from 'sonner';
 import "../../styles/globals.css"
+import axios from 'axios';
+
+import {
+    apiGetStationById,
+    apiGetChargingPointsByStationId
+} from '../../services/StationAPI';
+import { apiGetDriverProfile } from '../../services/DriverAPI';
+import { apiStartSession } from '../../services/ChargeSessionAPI';
+
+import {
+    ChargingStationDto,
+    ChargingPointDto,
+    EVDriverProfileDto,
+    CreateSessionData
+} from '../../types';
+
 interface StationDetailProps {
-  stationId: string;
-  onNavigate: (path: string) => void;
+    stationId: number;
+    onNavigate: (path: string) => void;
 }
 
 export function StationDetail({ stationId, onNavigate }: StationDetailProps) {
-  const [isBookingOpen, setIsBookingOpen] = useState(false);
+    const [station, setStation] = useState<ChargingStationDto | null>(null);
+    const [points, setPoints] = useState<ChargingPointDto[]>([]);
+    const [profile, setProfile] = useState<EVDriverProfileDto | null>(null);
+    const [isLoading, setIsLoading] = useState(true);
 
-  // Find station by ID
-  const station = sampleStations.find((s) => s.id === stationId) || sampleStations[0];
+    const [selectedPointId, setSelectedPointId] = useState<number | null>(null);
+    const [selectedVehicleId, setSelectedVehicleId] = useState<number | null>(null);
+    const [isStartingSession, setIsStartingSession] = useState(false);
 
-  const handleBookingConfirm = (portId: string, startTime: Date) => {
-    toast.success(`Booking confirmed for ${portId} at ${startTime.toLocaleTimeString()}`);
-    // API: POST /bookings { stationId, portId, startTime }
-    onNavigate('/driver/dashboard');
-  };
+    useEffect(() => {
+        const loadData = async () => {
+            try {
+                setIsLoading(true);
+                const [stationData, profileData, pointsData] = await Promise.all([
+                    apiGetStationById(stationId),
+                    apiGetDriverProfile(),
+                    apiGetChargingPointsByStationId(stationId)
+                ]);
 
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(amount);
-  };
+                setStation(stationData);
+                setProfile(profileData);
+                setPoints(pointsData);
 
-  const getPortStatusColor = (status: string) => {
-    switch (status) {
-      case 'available':
-        return 'text-green-600 bg-green-50 border-green-200';
-      case 'occupied':
-        return 'text-orange-600 bg-orange-50 border-orange-200';
-      case 'offline':
-        return 'text-red-600 bg-red-50 border-red-200';
-      default:
-        return 'text-gray-600 bg-gray-50 border-gray-200';
+                if (profileData.vehicles && profileData.vehicles.length > 0) {
+                    setSelectedVehicleId(profileData.vehicles[0].id);
+                }
+
+            } catch (error) {
+                toast.error("Không thể tải chi tiết trạm.");
+                console.error("Failed to load station detail:", error);
+            } finally {
+                setIsLoading(false);
+            }
+        };
+        loadData();
+    }, [stationId]);
+
+    const handleStartCharging = async () => {
+        // (A) SỬA LỖI: Thêm kiểm tra 'profile' (Type Guard)
+        if (!profile) {
+            toast.error("Không tìm thấy thông tin tài xế.");
+            return;
+        }
+        if (!selectedPointId) {
+            toast.error("Vui lòng chọn một điểm sạc (cổng).");
+            return;
+        }
+        if (!selectedVehicleId) {
+            toast.error("Vui lòng chọn xe của bạn.");
+            return;
+        }
+
+        setIsStartingSession(true);
+
+        const sessionData: CreateSessionData = {
+            // (B) Code ở đây giờ đã an toàn
+            driverId: profile.id,
+            vehicleId: selectedVehicleId,
+            chargingPointId: selectedPointId
+        };
+
+        try {
+            const newSession = await apiStartSession(sessionData);
+            toast.success(`Bắt đầu sạc tại cổng ${newSession.chargingPointId}!`);
+            onNavigate('/driver/dashboard');
+        } catch (error: any) {
+            console.error('Failed to start session:', error);
+            let errorMessage = "Không thể bắt đầu phiên sạc.";
+            if (axios.isAxiosError(error) && error.response) {
+                errorMessage = error.response.data?.message || error.response.data || errorMessage;
+            }
+            toast.error(errorMessage);
+        } finally {
+            setIsStartingSession(false);
+        }
+    };
+
+    const getPointStatusColor = (status: 'AVAILABLE' | 'CHARGING' | 'RESERVED' | 'OFFLINE' | 'FAULTED') => {
+        switch (status) {
+            case 'AVAILABLE':
+                return 'text-green-600 bg-green-50 border-green-200';
+            case 'CHARGING':
+            case 'RESERVED':
+                return 'text-orange-600 bg-orange-50 border-orange-200';
+            case 'OFFLINE':
+            case 'FAULTED':
+                return 'text-red-600 bg-red-50 border-red-200';
+            default:
+                return 'text-gray-600 bg-gray-50 border-gray-200';
+        }
+    };
+
+    if (isLoading) {
+        return <div className="p-6 text-center">Đang tải chi tiết trạm...</div>;
     }
-  };
 
-  const amenityIcons: Record<string, React.ReactNode> = {
-    'WiFi': <Wifi className="h-4 w-4" />,
-    'Coffee Shop': <Coffee className="h-4 w-4" />,
-    'Restaurant': <Utensils className="h-4 w-4" />,
-    'Restroom': <Coffee className="h-4 w-4" />,
-  };
+    if (!station || !profile) {
+        return (
+            <div className="p-6 text-center">
+                <h2 className="text-xl font-bold text-red-600">Không thể tải dữ liệu</h2>
+                <p className="text-gray-600 mb-4">Vui lòng thử đăng nhập lại.</p>
+                <Button variant="outline" onClick={() => onNavigate('/driver/dashboard')}>
+                    <ArrowLeft className="mr-2 h-4 w-4" />
+                    Quay lại Dashboard
+                </Button>
+            </div>
+        );
+    }
 
-  return (
-    <div className="max-w-6xl mx-auto">
-      {/* Back Button */}
-      <Button
-        variant="ghost"
-        onClick={() => onNavigate('/driver/dashboard')}
-        className="mb-6"
-      >
-        <ArrowLeft className="mr-2 h-4 w-4" />
-        Back to Dashboard
-      </Button>
+    const { name, location, status } = station;
 
-      <div className="grid lg:grid-cols-3 gap-6">
-        {/* Main Content */}
-        <div className="lg:col-span-2 space-y-6">
-          {/* Station Info */}
-          <Card className="p-6 rounded-2xl">
-            <div className="flex items-start justify-between mb-4">
-              <div>
-                <h1 className="mb-2">{station.name}</h1>
-                <div className="flex items-center gap-2 text-gray-600 mb-2">
-                  <MapPin className="h-4 w-4" />
-                  <span>{station.address}</span>
+    return (
+        <div className="max-w-6xl mx-auto p-6">
+            <Button
+                variant="ghost"
+                onClick={() => onNavigate('/driver/dashboard')}
+                className="mb-6"
+            >
+                <ArrowLeft className="mr-2 h-4 w-4" />
+                Back to Dashboard
+            </Button>
+
+            <div className="grid lg:grid-cols-3 gap-6">
+                <div className="lg:col-span-2 space-y-6">
+                    <Card className="p-6 rounded-2xl">
+                        <div className="flex items-start justify-between mb-4">
+                            <div>
+                                <h1 className="text-2xl font-bold mb-2">{name}</h1>
+                                <div className="flex items-center gap-2 text-gray-600 mb-2">
+                                    <MapPin className="h-4 w-4" />
+                                    <span>{location}</span>
+                                </div>
+                                <div className="flex items-center gap-4">
+                                    <Badge
+                                        className={
+                                            status === 'AVAILABLE'
+                                                ? 'bg-green-500'
+                                                : (status === 'OFFLINE' || status === 'FAULTED')
+                                                    ? 'bg-red-500'
+                                                    : 'bg-yellow-500'
+                                        }
+                                    >
+                                        {status}
+                                    </Badge>
+                                </div>
+                            </div>
+                        </div>
+                    </Card>
+
+                    <Card className="p-6 rounded-2xl">
+                        <h2 className="text-xl font-semibold mb-4">Bắt đầu Sạc</h2>
+                        <div className="grid md:grid-cols-2 gap-6">
+                            <div>
+                                <label className="text-sm font-medium">1. Chọn xe của bạn</label>
+                                <Select
+                                    value={selectedVehicleId?.toString()}
+                                    onValueChange={(val) => setSelectedVehicleId(Number(val))}
+                                >
+                                    <SelectTrigger>
+                                        <SelectValue placeholder="Chọn xe..." />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        {profile.vehicles.length === 0 ? (
+                                            <SelectItem value="none" disabled>Bạn chưa có xe</SelectItem>
+                                        ) : (
+                                            profile.vehicles.map(vehicle => (
+                                                <SelectItem key={vehicle.id} value={vehicle.id.toString()}>
+                                                    {vehicle.brand} {vehicle.model} ({vehicle.vehicleId})
+                                                </SelectItem>
+                                            ))
+                                        )}
+                                    </SelectContent>
+                                </Select>
+                            </div>
+
+                            <div>
+                                <label className="text-sm font-medium">2. Chọn điểm sạc (Cổng)</label>
+                                <Select
+                                    value={selectedPointId?.toString()}
+                                    onValueChange={(val) => setSelectedPointId(Number(val))}
+                                >
+                                    <SelectTrigger>
+                                        <SelectValue placeholder="Chọn điểm sạc..." />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        {points.length === 0 ? (
+                                            <SelectItem value="none" disabled>Trạm này không có điểm sạc nào</SelectItem>
+                                        ) : (
+                                            points.map(point => (
+                                                <SelectItem
+                                                    key={point.chargingPointId}
+                                                    value={point.chargingPointId.toString()}
+                                                    disabled={point.status !== 'AVAILABLE'}
+                                                >
+                                                    Cổng {point.chargingPointId} ({point.type}) - {point.power}kW - {point.status}
+                                                </SelectItem>
+                                            ))
+                                        )}
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                        </div>
+
+                        <Button
+                            onClick={handleStartCharging}
+                            disabled={isStartingSession || !selectedPointId || !selectedVehicleId}
+                            className="w-full mt-6 bg-green-600 hover:bg-green-700 text-white"
+                            size="lg"
+                        >
+                            {isStartingSession ? "Đang kết nối..." : "Bắt Đầu Sạc Ngay"}
+                        </Button>
+                    </Card>
                 </div>
-                <div className="flex items-center gap-4">
-                  <div className="flex items-center gap-1">
-                    <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
-                    <span>{station.rating}</span>
-                  </div>
-                  {station.distance !== undefined && (
-                    <div className="flex items-center gap-1">
-                      <Navigation className="h-4 w-4 text-[#0f766e]" />
-                      <span>{station.distance} km away</span>
-                    </div>
-                  )}
-                  <Badge
-                    className={
-                      station.status === 'online'
-                        ? 'bg-green-500'
-                        : station.status === 'offline'
-                        ? 'bg-red-500'
-                        : 'bg-orange-500'
-                    }
-                  >
-                    {station.status}
-                  </Badge>
+
+                <div className="space-y-6">
+                    <Card className="p-6 rounded-2xl bg-gradient-to-br from-[#0f766e] to-[#0ea5a4] text-white">
+                        <div className="flex items-center gap-2 mb-4">
+                            <DollarSign className="h-5 w-5" />
+                            <h3 className="text-white">Pricing (Demo)</h3>
+                        </div>
+                        <p className="text-3xl mb-2">4,500 ₫</p>
+                        <p className="text-sm text-white/80 mb-4">per kWh</p>
+                    </Card>
+
+                    <Card className="p-6 rounded-2xl">
+                        <div className="flex items-center gap-2 mb-4">
+                            <Clock className="h-5 w-5 text-[#0f766e]" />
+                            <h3>Operating Hours</h3>
+                        </div>
+                        <p className="text-gray-600">24/7</p>
+                    </Card>
+
+                    <Card className="p-6 rounded-2xl">
+                        <div className="flex items-center gap-2 mb-4">
+                            <Phone className="h-5 w-5 text-[#0f766e]" />
+                            <h3>Contact</h3>
+                        </div>
+                        <p className="text-gray-600">Hotline: 1800-8888</p>
+                    </Card>
+
+                    <Button
+                        variant="outline"
+                        className="w-full"
+                        onClick={() => toast.info('Opening directions in maps... (Demo)')}
+                    >
+                        <Navigation className="mr-2 h-4 w-4" />
+                        Get Directions
+                    </Button>
                 </div>
-              </div>
-              <Button
-                size="lg"
-                className="bg-[#0f766e] hover:bg-[#0f766e]/90"
-                onClick={() => setIsBookingOpen(true)}
-                disabled={station.availablePorts === 0}
-              >
-                Book Now
-              </Button>
             </div>
-          </Card>
-
-          {/* Charging Ports */}
-          <Card className="p-6 rounded-2xl">
-            <div className="flex items-center justify-between mb-4">
-              <h2>Available Ports</h2>
-              <Badge variant="outline">
-                {station.availablePorts}/{station.totalPorts} available
-              </Badge>
-            </div>
-
-            <div className="grid md:grid-cols-2 gap-4">
-              {station.ports.map((port) => (
-                <Card
-                  key={port.id}
-                  className={`p-4 rounded-xl border-2 ${
-                    port.status === 'available'
-                      ? 'border-green-200 bg-green-50/30'
-                      : 'border-gray-200 bg-gray-50'
-                  }`}
-                >
-                  <div className="flex items-center justify-between mb-3">
-                    <div className="flex items-center gap-2">
-                      <Zap className="h-5 w-5 text-[#0f766e]" />
-                      <span className="font-medium">{port.type}</span>
-                    </div>
-                    <Badge variant="outline" className={getPortStatusColor(port.status)}>
-                      {port.status}
-                    </Badge>
-                  </div>
-                  <div className="space-y-2 text-sm text-gray-600">
-                    <div className="flex items-center justify-between">
-                      <span>Power Output</span>
-                      <span className="font-medium text-gray-900">{port.power} kW</span>
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <span>Est. Charge Time</span>
-                      <span className="font-medium text-gray-900">
-                        {Math.round((80 / port.power) * 60)} min
-                      </span>
-                    </div>
-                  </div>
-                </Card>
-              ))}
-            </div>
-          </Card>
-
-          {/* Amenities */}
-          <Card className="p-6 rounded-2xl">
-            <h2 className="mb-4">Amenities</h2>
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-              {station.amenities.map((amenity) => (
-                <div
-                  key={amenity}
-                  className="flex items-center gap-3 p-3 rounded-xl bg-gray-50"
-                >
-                  {amenityIcons[amenity] || <Coffee className="h-4 w-4" />}
-                  <span className="text-sm">{amenity}</span>
-                </div>
-              ))}
-            </div>
-          </Card>
         </div>
-
-        {/* Sidebar */}
-        <div className="space-y-6">
-          {/* Pricing */}
-          <Card className="p-6 rounded-2xl bg-gradient-to-br from-[#0f766e] to-[#0ea5a4] text-white">
-            <div className="flex items-center gap-2 mb-4">
-              <DollarSign className="h-5 w-5" />
-              <h3 className="text-white">Pricing</h3>
-            </div>
-            <p className="text-3xl mb-2">{formatCurrency(station.pricePerKwh)}</p>
-            <p className="text-sm text-white/80 mb-4">per kWh</p>
-            <div className="bg-white/10 rounded-xl p-3 text-sm">
-              <p className="mb-1">Estimated cost for 50 kWh:</p>
-              <p className="text-xl">{formatCurrency(station.pricePerKwh * 50)}</p>
-            </div>
-          </Card>
-
-          {/* Operating Hours */}
-          <Card className="p-6 rounded-2xl">
-            <div className="flex items-center gap-2 mb-4">
-              <Clock className="h-5 w-5 text-[#0f766e]" />
-              <h3>Operating Hours</h3>
-            </div>
-            <div className="space-y-2 text-sm">
-              <div className="flex justify-between">
-                <span className="text-gray-600">Monday - Friday</span>
-                <span>24/7</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-gray-600">Saturday - Sunday</span>
-                <span>24/7</span>
-              </div>
-            </div>
-            <Badge className="mt-4 bg-green-500 w-full justify-center">
-              Open Now
-            </Badge>
-          </Card>
-
-          {/* Contact */}
-          <Card className="p-6 rounded-2xl">
-            <div className="flex items-center gap-2 mb-4">
-              <Phone className="h-5 w-5 text-[#0f766e]" />
-              <h3>Contact</h3>
-            </div>
-            <div className="space-y-2 text-sm">
-              <p className="text-gray-600">Station Hotline</p>
-              <p>1800-8888</p>
-              <p className="text-gray-600 mt-3">Emergency Support</p>
-              <p>1900-1234</p>
-            </div>
-          </Card>
-
-          {/* Directions */}
-          <Button
-            variant="outline"
-            className="w-full"
-            onClick={() => toast.info('Opening directions in maps...')}
-          >
-            <Navigation className="mr-2 h-4 w-4" />
-            Get Directions
-          </Button>
-        </div>
-      </div>
-
-      {/* Booking Modal */}
-      <BookingModal
-        station={station}
-        isOpen={isBookingOpen}
-        onClose={() => setIsBookingOpen(false)}
-        onConfirm={handleBookingConfirm}
-      />
-    </div>
-  );
+    );
 }

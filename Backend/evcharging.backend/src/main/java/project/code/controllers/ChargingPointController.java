@@ -15,7 +15,6 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/charging-points")
-@CrossOrigin(origins = "*")
 @RequiredArgsConstructor
 public class ChargingPointController {
 

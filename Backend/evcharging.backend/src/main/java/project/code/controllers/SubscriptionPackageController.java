@@ -12,7 +12,6 @@ import java.util.Optional;
 
 @RestController
 @RequestMapping("/api/subscription-packages")
-@CrossOrigin(origins = "*")
 @RequiredArgsConstructor
 public class SubscriptionPackageController {
 

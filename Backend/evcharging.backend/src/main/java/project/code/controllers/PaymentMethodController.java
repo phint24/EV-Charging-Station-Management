@@ -13,7 +13,6 @@ import java.util.Optional;
 
 @RestController
 @RequestMapping("/api/payment-methods")
-@CrossOrigin(origins = "*")
 @RequiredArgsConstructor // (3) Dùng Lombok thay vì @Autowired
 public class PaymentMethodController {
 
