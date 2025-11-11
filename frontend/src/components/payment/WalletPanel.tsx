@@ -1,12 +1,3 @@
-/**
- * WalletPanel Component
- * Props:
- * - balance: number - Current wallet balance
- * - onTopUp: (amount: number) => void - Handler for topping up wallet
- * 
- * Displays wallet balance and top-up options
- */
-
 import { useState } from 'react';
 import { Wallet, Plus, CreditCard, Building2 } from 'lucide-react';
 import { Card } from '../ui/card';
@@ -20,7 +11,7 @@ interface WalletPanelProps {
   balance: number;
   onTopUp: (amount: number, method: 'card' | 'bank') => void;
   isOpen?: boolean;
-  onOpenChange?: (open: boolean) => void; // ← THÊM DÒNG NÀY
+  onOpenChange?: (open: boolean) => void;
 }
 
 export function WalletPanel({ balance, onTopUp, isOpen: externalIsOpen, onOpenChange }: WalletPanelProps) {
@@ -29,8 +20,6 @@ export function WalletPanel({ balance, onTopUp, isOpen: externalIsOpen, onOpenCh
   const [amount, setAmount] = useState('');
   const [selectedMethod, setSelectedMethod] = useState<'card' | 'bank'>('card');
 
-  // ← THÊM ĐOẠN NÀY XUỐNG DƯỚI
-  // Use external control if provided, otherwise use internal state
   const isTopUpOpen = externalIsOpen !== undefined ? externalIsOpen : internalIsTopUpOpen;
   const setIsTopUpOpen = (open: boolean) => {
     if (onOpenChange) {
