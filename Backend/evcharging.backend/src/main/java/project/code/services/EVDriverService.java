@@ -30,7 +30,7 @@ public class EVDriverService {
     private final UserRepository userRepository;
     private final VehicleRepository vehicleRepository;
 
-    @Transactional(readOnly = true) // Đảm bảo session mở khi mapping
+    @Transactional(readOnly = true)
     public EVDriverProfileDto getDriverProfile(User currentUser) {
         EVDriver driverProfile = findDriverProfileByUser(currentUser);
         return mapToEvDriverProfileDto(driverProfile);
@@ -63,6 +63,7 @@ public class EVDriverService {
             evDriverRepository.save(driverProfile);
         }
 
+        // Gọi hàm map đã sửa (giờ nó sẽ trả về cả xe)
         return mapToEvDriverProfileDto(driverProfile);
     }
 
@@ -133,6 +134,7 @@ public class EVDriverService {
     }
 
     private EVDriverProfileDto mapToEvDriverProfileDto(EVDriver driver) {
+        // Map User (Giữ nguyên)
         User user = driver.getUserAccount();
         UserSummaryDto userDto = new UserSummaryDto(
                 user.getId(),
@@ -140,11 +142,18 @@ public class EVDriverService {
                 user.getEmail(),
                 user.getRole()
         );
+
+        List<VehicleDto> vehicleDtos = driver.getVehicles() // Lấy List<Vehicle>
+                .stream()
+                .map(this::mapToVehicleDto) // Chuyển từng xe sang VehicleDto
+                .collect(Collectors.toList());
+
         return new EVDriverProfileDto(
                 driver.getId(),
                 userDto,
                 driver.getPhoneNumber(),
-                driver.getWalletBalance()
+                driver.getWalletBalance(),
+                vehicleDtos
         );
     }
 

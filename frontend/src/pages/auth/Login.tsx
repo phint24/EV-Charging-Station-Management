@@ -7,7 +7,10 @@ import { Card } from '../../components/ui/card';
 import { toast } from 'sonner';
 import "../../styles/globals.css";
 
-import { apiLogin, setAuthToken, AuthResponse } from '../../services/AuthAPI';
+import { apiLogin } from '../../services/AuthAPI';
+import { setAuthToken } from '../../services/api';
+import { AuthResponse } from '../../types';
+
 import axios from 'axios';
 
 type ApiRole = 'ROLE_ADMIN' | 'ROLE_CSSTAFF' | 'ROLE_EVDRIVER';
