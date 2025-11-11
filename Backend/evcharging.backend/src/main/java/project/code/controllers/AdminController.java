@@ -17,7 +17,6 @@ import java.util.Optional;
 
 @RestController
 @RequestMapping("/api/admins")
-@CrossOrigin(origins = "*")
 @RequiredArgsConstructor
 @PreAuthorize("hasRole('ADMIN')")
 public class AdminController {
