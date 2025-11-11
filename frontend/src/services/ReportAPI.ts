@@ -145,7 +145,7 @@ export const deleteReport = async (reportId: number): Promise<string> => {
 export const exportRevenueReport = async (): Promise<void> => {
     try {
         const response = await ReportAPI.get('/sorted', {
-            responseType: 'blob',
+            // responseType: 'blob',
         });
 
         const blob = new Blob([response.data], { type: 'application/json' });
