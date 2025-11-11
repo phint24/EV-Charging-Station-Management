@@ -2,14 +2,20 @@ package project.code.services;
 
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import project.code.model.EVDriver;
+import project.code.model.PaymentMethod;
 import project.code.model.User;
 import project.code.model.Vehicle;
 import project.code.repository.EVDriverRepository;
+import project.code.repository.PaymentMethodRepository;
 import project.code.repository.UserRepository;
 import project.code.repository.VehicleRepository;
+
+import project.code.dto.wallet.WalletTopUpRequest;
+import project.code.dto.wallet.WalletBalanceApiResponse;
 
 import project.code.dto.evdriver.EVDriverProfileDto;
 import project.code.dto.evdriver.UpdateEvDriverRequest;
@@ -29,6 +35,7 @@ public class EVDriverService {
     private final EVDriverRepository evDriverRepository;
     private final UserRepository userRepository;
     private final VehicleRepository vehicleRepository;
+    private final PaymentMethodRepository paymentMethodRepository;
 
     @Transactional(readOnly = true)
     public EVDriverProfileDto getDriverProfile(User currentUser) {
@@ -63,7 +70,6 @@ public class EVDriverService {
             evDriverRepository.save(driverProfile);
         }
 
-        // Gọi hàm map đã sửa (giờ nó sẽ trả về cả xe)
         return mapToEvDriverProfileDto(driverProfile);
     }
 
@@ -128,13 +134,59 @@ public class EVDriverService {
         vehicleRepository.delete(vehicle);
     }
 
+    @Transactional(readOnly = true)
+    public WalletBalanceApiResponse getWalletBalance(User currentUser) {
+        EVDriver driver = findDriverProfileByUser(currentUser);
+
+        return new WalletBalanceApiResponse(
+                driver.getId(),
+                currentUser.getEmail(),
+                driver.getWalletBalance(),
+                0.0,
+                driver.getWalletBalance()
+        );
+    }
+
+    @Transactional
+    public WalletBalanceApiResponse topUpWallet(User currentUser, WalletTopUpRequest request) {
+
+        EVDriver driver = findDriverProfileByUser(currentUser);
+
+        PaymentMethod paymentMethod = paymentMethodRepository.findByMethodId(request.paymentMethodId())
+                .orElseThrow(() -> new EntityNotFoundException("Không tìm thấy phương thức thanh toán ID: " + request.paymentMethodId()));
+
+        if (!paymentMethod.getDriver().getId().equals(driver.getId())) {
+            throw new AccessDeniedException("Lỗi bảo mật: Bạn không có quyền dùng phương thức thanh toán này.");
+        }
+
+        boolean paymentSuccess = true; // Giả sử luôn thành công
+
+        if (!paymentSuccess) {
+            throw new RuntimeException("Thanh toán thất bại. Vui lòng thử lại.");
+        }
+
+        double oldBalance = driver.getWalletBalance();
+        double amountToAdd = request.amount();
+        double newBalance = oldBalance + amountToAdd;
+
+        driver.setWalletBalance(newBalance);
+        evDriverRepository.save(driver);
+
+        return new WalletBalanceApiResponse(
+                driver.getId(),
+                currentUser.getEmail(),
+                oldBalance,
+                amountToAdd,
+                newBalance
+        );
+    }
+
     private EVDriver findDriverProfileByUser(User user) {
         return evDriverRepository.findByUserAccount(user)
                 .orElseThrow(() -> new EntityNotFoundException("Không tìm thấy hồ sơ EVDriver cho người dùng: " + user.getEmail()));
     }
 
     private EVDriverProfileDto mapToEvDriverProfileDto(EVDriver driver) {
-        // Map User (Giữ nguyên)
         User user = driver.getUserAccount();
         UserSummaryDto userDto = new UserSummaryDto(
                 user.getId(),
@@ -143,9 +195,9 @@ public class EVDriverService {
                 user.getRole()
         );
 
-        List<VehicleDto> vehicleDtos = driver.getVehicles() // Lấy List<Vehicle>
+        List<VehicleDto> vehicleDtos = driver.getVehicles()
                 .stream()
-                .map(this::mapToVehicleDto) // Chuyển từng xe sang VehicleDto
+                .map(this::mapToVehicleDto)
                 .collect(Collectors.toList());
 
         return new EVDriverProfileDto(
