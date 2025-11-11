@@ -28,7 +28,6 @@ public class ChargeSessionService {
     private final ChargingStationRepository stationRepository;
 
     @Transactional(readOnly = true)
-    // (2) SỬA KIỂU TRẢ VỀ
     public List<ChargeSessionDto> getAll() {
         return repository.findAll().stream()
                 .map(this::mapToDto)
@@ -36,14 +35,12 @@ public class ChargeSessionService {
     }
 
     @Transactional(readOnly = true)
-    // (2) SỬA KIỂU TRẢ VỀ
     public Optional<ChargeSessionDto> getById(Long id) {
         return repository.findById(id)
                 .map(this::mapToDto);
     }
 
     @Transactional
-    // (2) SỬA KIỂU TRẢ VỀ
     public ChargeSessionDto startSession(CreateChargeSessionRequest request) {
 
         EVDriver driver = evDriverRepository.findById(request.driverId())
@@ -99,6 +96,16 @@ public class ChargeSessionService {
         point.setStatus(ChargingPointStatus.AVAILABLE);
         chargingPointRepository.save(point);
 
+        EVDriver driver = session.getDriver();
+        double newBalance = driver.getWalletBalance() - cost;
+
+        if (newBalance < 0) {
+            System.out.println("Cảnh báo: Số dư của tài xế " + driver.getId() + " là số âm.");
+        }
+
+        driver.setWalletBalance(newBalance);
+        evDriverRepository.save(driver);
+
         ChargeSession savedSession = repository.save(session);
 
         return mapToDto(savedSession);
@@ -113,8 +120,7 @@ public class ChargeSessionService {
     }
 
     private double calculateCost(ChargeSession session) {
-        // TODO: Logic tính toán chi phí
-        return session.getEnergyUsed() * 1.5;
+        return session.getEnergyUsed() * 1.0;
     }
 
     private ChargeSessionDto mapToDto(ChargeSession session) {

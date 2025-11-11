@@ -79,3 +79,22 @@ export interface ChargingPointDto {
     power: number;
     status: ChargingPointStatus;
 }
+
+export interface Notification {
+    id: string;
+    message: string;
+    timeAgo: string;
+}
+
+export interface NotificationApiResponse {
+    unreadCount: number;
+    notifications: Notification[];
+}
+
+export interface WalletBalanceApiResponse {
+    driverProfileId: number;
+    email: string;
+    oldBalance: number;
+    amountChanged: number;
+    newBalance: number;
+}
