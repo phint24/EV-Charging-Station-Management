@@ -14,30 +14,29 @@ import "./styles/globals.css"
 import { apiGetDriverProfile } from './services/DriverAPI';
 import { AuthResponse } from './types';
 import { jwtDecode } from 'jwt-decode';
-import {setAuthToken} from "./services/api";
+import { setAuthToken } from "./services/api";
 
 type ApiRole = 'ROLE_ADMIN' | 'ROLE_CSSTAFF' | 'ROLE_EVDRIVER';
-type AppRole = 'ROLE_ADMIN' | 'ROLE_CSSTAFF' | 'ROLE_EVDRIVER';
 
 interface CurrentUser {
     email: string;
-    role: AppRole; // Dùng vai trò đã chuẩn hóa
+    role: ApiRole;
     name: string;
     walletBalance: number;
 }
 
-const normalizeRole = (apiRole: ApiRole): AppRole => {
+const normalizeRole = (apiRole: ApiRole): ApiRole => {
     if (apiRole === 'ROLE_EVDRIVER') return 'ROLE_EVDRIVER';
     if (apiRole === 'ROLE_CSSTAFF') return 'ROLE_CSSTAFF';
     if (apiRole === 'ROLE_ADMIN') return 'ROLE_ADMIN';
     return 'ROLE_EVDRIVER';
 };
 
-function DashboardFallback({ role, onLogout }: { role: AppRole, onLogout: () => void }) {
+function DashboardFallback({ role, onLogout }: { role: ApiRole, onLogout: () => void }) {
     return (
         <div className="min-h-screen bg-gray-100 flex items-center justify-center p-4">
             <div className="text-center">
-                <h1 className="text-3xl font-bold mb-4">Chào mừng, {role}!</h1>
+                <h1 className="text-3xl font-bold mb-4">Chào mừng, {role.replace('ROLE_', '').toLowerCase()}!</h1>
                 <p className="mb-6">Bạn đã đăng nhập thành công.</p>
                 <button
                     onClick={onLogout}
@@ -57,7 +56,6 @@ export default function App() {
     const [isWalletDialogOpen, setIsWalletDialogOpen] = useState(false);
     const [isAppLoading, setIsAppLoading] = useState(true);
 
-    // useEffect để tải user từ token (khi reload)
     useEffect(() => {
         const loadUserFromToken = async () => {
             const token = localStorage.getItem('token');
@@ -65,12 +63,11 @@ export default function App() {
                 try {
                     setAuthToken(token);
                     const decodedToken: { sub: string, roles: ApiRole[] } = jwtDecode(token);
-
+                    console.log("Role from server: ", decodedToken.roles);
                     const userRole = normalizeRole(decodedToken.roles[0]);
                     let userName = decodedToken.sub;
                     let walletBalance = 0;
 
-                    // Nếu là driver, gọi /me để lấy thông tin chi tiết
                     if (userRole === 'ROLE_EVDRIVER') {
                         try {
                             const profile = await apiGetDriverProfile();
@@ -88,8 +85,9 @@ export default function App() {
                         walletBalance: walletBalance,
                     });
 
-                    // Điều hướng đến đúng dashboard
-                    setCurrentPath(`/${userRole}/dashboard`);
+                    if (userRole === 'ROLE_EVDRIVER') setCurrentPath('/driver/dashboard');
+                    else if (userRole === 'ROLE_CSSTAFF') setCurrentPath('/staff/dashboard');
+                    else if (userRole === 'ROLE_ADMIN') setCurrentPath('/admin/dashboard');
 
                 } catch (error) {
                     console.error("Token không hợp lệ hoặc đã hết hạn:", error);
@@ -100,9 +98,8 @@ export default function App() {
             setIsAppLoading(false);
         };
         loadUserFromToken();
-    }, []); // Chỉ chạy 1 lần
+    }, []);
 
-    // Hàm điều hướng
     const handleNavigate = (path: string) => {
         if (path === '/driver/wallet') {
             setIsWalletDialogOpen(true);
@@ -111,30 +108,27 @@ export default function App() {
         setCurrentPath(path);
     };
 
-    // Hàm xử lý khi Login/Register thành công
     const handleLogin = (authData: AuthResponse) => {
-        const appRole = normalizeRole(authData.role);
+        const apiRole = normalizeRole(authData.role);
 
         setCurrentUser({
             email: authData.email,
-            role: appRole,
-            name: authData.email, // Tên tạm thời
+            role: apiRole,
+            name: authData.email,
             walletBalance: 0,
         });
 
-        localStorage.setItem('role', appRole); // Lưu role đã chuẩn hóa
+        localStorage.setItem('role', apiRole);
 
-        // Điều hướng CHÍNH XÁC dựa trên vai trò
-        if (appRole === 'ROLE_EVDRIVER') {
+        if (apiRole === 'ROLE_EVDRIVER') {
             setCurrentPath('/driver/dashboard');
-        } else if (appRole === 'ROLE_CSSTAFF') {
+        } else if (apiRole === 'ROLE_CSSTAFF') {
             setCurrentPath('/staff/dashboard');
-        } else if (appRole === 'ROLE_ADMIN') {
+        } else if (apiRole === 'ROLE_ADMIN') {
             setCurrentPath('/admin/dashboard');
         }
     };
 
-    // Hàm Đăng xuất
     const handleLogout = () => {
         setAuthToken(null);
         localStorage.removeItem('role');
@@ -152,9 +146,7 @@ export default function App() {
         }
     };
 
-    // Hàm Render (Đã sửa lỗi logic)
     const renderPage = () => {
-        // Nếu chưa đăng nhập
         if (!currentUser) {
             if (currentPath === '/auth/register') {
                 return <Register onRegister={handleLogin} onNavigate={handleNavigate} />;
@@ -165,13 +157,11 @@ export default function App() {
             return <Landing onNavigate={handleNavigate} />;
         }
 
-        // Nếu đã đăng nhập
         if (currentPath.startsWith('/driver/station/')) {
             const stationId = parseInt(currentPath.split('/').pop() || '0');
             return <StationDetail stationId={stationId} onNavigate={handleNavigate} />;
         }
 
-        // KIỂM TRA VAI TRÒ TRƯỚC KHI RENDER
         if (currentPath.startsWith('/driver') && currentUser.role === 'ROLE_EVDRIVER') {
             return (
                 <DriverDashboard
@@ -190,7 +180,6 @@ export default function App() {
             return <AdminDashboard onNavigate={handleNavigate} />;
         }
 
-        // Xử lý trường hợp bị lạc (ví dụ: Admin vào /driver/dashboard)
         if (currentUser.role === 'ROLE_EVDRIVER') return <DriverDashboard onNavigate={handleNavigate} isWalletDialogOpen={isWalletDialogOpen} onWalletDialogChange={setIsWalletDialogOpen} />;
         if (currentUser.role === 'ROLE_CSSTAFF') return <StaffDashboard onNavigate={handleNavigate} />;
         if (currentUser.role === 'ROLE_ADMIN') return <AdminDashboard onNavigate={handleNavigate} />;
@@ -212,7 +201,6 @@ export default function App() {
         <div className="h-screen w-full overflow-hidden bg-gray-50">
             {showNav && (
                 <TopNav
-                    // (Truyền vai trò đã chuẩn hóa 'driver', 'admin', 'staff')
                     userRole={currentUser.role}
                     userName={currentUser.name}
                     walletBalance={currentUser.role === 'ROLE_EVDRIVER' ? currentUser.walletBalance : undefined}
