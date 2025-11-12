@@ -71,7 +71,7 @@ export default function App() {
                     let walletBalance = 0;
 
                     // Nếu là driver, gọi /me để lấy thông tin chi tiết
-                    if (userRole === 'driver') {
+                    if (userRole === 'ROLE_EVDRIVER') {
                         try {
                             const profile = await apiGetDriverProfile();
                             userName = profile.userAccount.name;
