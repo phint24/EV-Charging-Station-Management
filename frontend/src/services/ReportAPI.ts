@@ -142,29 +142,77 @@ export const deleteReport = async (reportId: number): Promise<string> => {
 
 
 // Export revenue report dưới dạng file JSON
+// export const exportRevenueReport = async (): Promise<void> => {
+//     try {
+//         const response = await ReportAPI.get('/sorted', {
+//             // responseType: 'blob',
+//         });
+
+//         const blob = new Blob([response.data], { type: 'application/json' });
+//         const url = window.URL.createObjectURL(blob);
+//         const link = document.createElement('a');
+//         link.href = url;
+        
+//         const timestamp = new Date().toISOString().split('T')[0];
+//         link.setAttribute('download', `revenue-report-${timestamp}.json`);
+        
+//         document.body.appendChild(link);
+//         link.click();
+//         link.remove();
+//         window.URL.revokeObjectURL(url);
+//     } catch (error) {
+//         console.error('Error exporting revenue report:', error);
+//         throw error;
+//     }
+// };
+
 export const exportRevenueReport = async (): Promise<void> => {
     try {
-        const response = await ReportAPI.get('/sorted', {
-            // responseType: 'blob',
-        });
-
-        const blob = new Blob([response.data], { type: 'application/json' });
+        console.log('Fetching data from MySQL via backend API...');
+        
+        // Gọi API backend để lấy dữ liệu từ MySQL
+        const response = await ReportAPI.get('/sorted');
+        const data = response.data;
+        
+        console.log('Data received from backend:', data);
+        console.log('Total reports:', data.length);
+        
+        // Kiểm tra nếu không có dữ liệu
+        if (!data || data.length === 0) {
+            throw new Error('Không có dữ liệu báo cáo để export');
+        }
+        
+        // Convert to JSON string với format đẹp
+        const jsonString = JSON.stringify(data, null, 2);
+        
+        // Create blob
+        const blob = new Blob([jsonString], { type: 'application/json' });
         const url = window.URL.createObjectURL(blob);
+        
+        // Create link và download
         const link = document.createElement('a');
         link.href = url;
         
         const timestamp = new Date().toISOString().split('T')[0];
-        link.setAttribute('download', `revenue-report-${timestamp}.json`);
+        const filename = `revenue-report-${timestamp}.json`;
+        link.setAttribute('download', filename);
+        
+        console.log('Downloading file:', filename);
         
         document.body.appendChild(link);
         link.click();
         link.remove();
+        
         window.URL.revokeObjectURL(url);
+        console.log('Export completed successfully!');
+        
     } catch (error) {
         console.error('Error exporting revenue report:', error);
         throw error;
     }
 };
+
+
 
 // Export report theo station
 export const exportReportByStation = async (stationId: number): Promise<void> => {

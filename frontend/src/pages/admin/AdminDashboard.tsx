@@ -1,4 +1,5 @@
-
+import { useState } from 'react'; // Thêm dòng này 
+import { X } from 'lucide-react'; // Thêm dòng này
 import { Card } from '../../components/ui/card';
 import { Badge } from '../../components/ui/badge';
 import { Button } from '../../components/ui/button';
@@ -16,12 +17,14 @@ import { TrendingUp, Users, MapPin, DollarSign, Zap, AlertCircle, Download, Plus
 import { revenueByStation, utilizationByHour } from '../../data/sample';
 import { toast } from 'sonner';
 import { exportRevenueReport } from '../../services/ReportAPI';
+import { AddStationModal } from '../../components/station/AddStationModal'; // Thêm dòng này
 
 interface AdminDashboardProps {
   onNavigate: (path: string) => void;
 }
 
 export function AdminDashboard({ onNavigate }: AdminDashboardProps) {
+  const [isAddStationModalOpen, setIsAddStationModalOpen] = useState(false); // Thêm dòng này 
   const stats = [
     {
       icon: <DollarSign className="h-6 w-6" />,
@@ -88,10 +91,25 @@ export function AdminDashboard({ onNavigate }: AdminDashboardProps) {
     
   };
 
+  // const handleAddStation = () => {
+  //   toast.info('Opening add station form...');
+  //   onNavigate('/admin/stations/new');
+  // };
+
   const handleAddStation = () => {
-    toast.info('Opening add station form...');
-    onNavigate('/admin/stations/new');
-  };
+    setIsAddStationModalOpen(true);
+};
+
+const handleCloseModal = () => {
+    setIsAddStationModalOpen(false);
+};
+
+const handleAddStationSuccess = () => {
+    toast.success('Trạm sạc đã được thêm thành công!');
+    // TODO: Refresh station list
+};
+
+
 
   const handleEditUser = (userId: string) => {
     toast.info(`Opening user editor for ${userId}`);
@@ -303,6 +321,11 @@ export function AdminDashboard({ onNavigate }: AdminDashboardProps) {
           </Table>
         </div>
       </Card>
+      <AddStationModal
+        isOpen={isAddStationModalOpen}
+        onClose={handleCloseModal}
+        onSuccess={handleAddStationSuccess}
+      />
     </div>
   );
 }

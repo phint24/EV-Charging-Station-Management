@@ -106,7 +106,7 @@ export function DriverDashboard({ onNavigate, isWalletDialogOpen, onWalletDialog
         const MOCK_POWER_KW = 50.0;
 
         const calculatedEnergyUsed = MOCK_POWER_KW * hoursElapsed*100;
-        const roundedEnergyUsed = Math.round(calculatedEnergyUsed * 100) / 100
+        const roundedEnergyUsed = Math.round(calculatedEnergyUsed * 100) / 100;
 
         const stopData: StopSessionData = {
             energyUsed: roundedEnergyUsed

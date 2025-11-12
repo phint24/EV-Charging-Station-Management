@@ -12,4 +12,5 @@ import java.util.Optional;
 public interface PaymentMethodRepository extends JpaRepository<PaymentMethod, String> {
     List<PaymentMethod> findByDriver(EVDriver driver);
     Optional<PaymentMethod> findByDriverAndIsDefault(EVDriver driver, boolean isDefault);
+    Optional<PaymentMethod> findByMethodId(Long methodId);
 }

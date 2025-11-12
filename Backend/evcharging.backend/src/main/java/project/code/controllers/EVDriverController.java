@@ -9,6 +9,8 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
+import project.code.dto.wallet.WalletBalanceApiResponse;
+import project.code.dto.wallet.WalletTopUpRequest;
 import project.code.model.User;
 import project.code.services.EVDriverService;
 
@@ -24,7 +26,7 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/evdrivers")
 @RequiredArgsConstructor
-@PreAuthorize("hasRole('ROLE_EVDRIVER')")
+@PreAuthorize("hasRole('EVDRIVER')")
 public class EVDriverController {
 
     private final EVDriverService evDriverService;
@@ -81,6 +83,22 @@ public class EVDriverController {
         } catch (RuntimeException e) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
         }
+    }
+
+    @GetMapping("/me/wallet")
+    public ResponseEntity<WalletBalanceApiResponse> getCurrentDriverWallet() {
+        User currentUser = getCurrentUser();
+        WalletBalanceApiResponse balance = evDriverService.getWalletBalance(currentUser);
+        return ResponseEntity.ok(balance);
+    }
+
+    @PostMapping("/me/wallet/top-up")
+    public ResponseEntity<WalletBalanceApiResponse> topUpWallet(
+            @Valid @RequestBody WalletTopUpRequest request) {
+
+        User currentUser = getCurrentUser();
+        WalletBalanceApiResponse updatedBalance = evDriverService.topUpWallet(currentUser, request);
+        return ResponseEntity.ok(updatedBalance);
     }
 
     private User getCurrentUser() {
