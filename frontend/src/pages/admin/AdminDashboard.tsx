@@ -1,4 +1,5 @@
-
+import { useState } from 'react'; // Thêm dòng này 
+import { X } from 'lucide-react'; // Thêm dòng này
 import { Card } from '../../components/ui/card';
 import { Badge } from '../../components/ui/badge';
 import { Button } from '../../components/ui/button';
@@ -15,12 +16,15 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContaine
 import { TrendingUp, Users, MapPin, DollarSign, Zap, AlertCircle, Download, Plus } from 'lucide-react';
 import { revenueByStation, utilizationByHour } from '../../data/sample';
 import { toast } from 'sonner';
+import { exportRevenueReport } from '../../services/ReportAPI';
+import { AddStationModal } from '../../components/station/AddStationModal'; // Thêm dòng này
 
 interface AdminDashboardProps {
   onNavigate: (path: string) => void;
 }
 
 export function AdminDashboard({ onNavigate }: AdminDashboardProps) {
+  const [isAddStationModalOpen, setIsAddStationModalOpen] = useState(false); // Thêm dòng này 
   const stats = [
     {
       icon: <DollarSign className="h-6 w-6" />,
@@ -75,15 +79,37 @@ export function AdminDashboard({ onNavigate }: AdminDashboardProps) {
     { id: 'a-003', type: 'error', message: 'Port P2 at Vincom Mega reported faulty', time: '2 hours ago' },
   ];
 
-  const handleExportReport = () => {
-    toast.success('Downloading revenue report...');
-    // API: GET /reports/revenue/export
+  const handleExportReport = async () => {
+    try {
+      toast.success('Đang chuẩn bị tải xuống báo cáo...');
+      await exportRevenueReport();
+      toast.success('Báo cáo đã được tải xuống thành công!');
+    } catch (error) {
+      console.error('Export failed:', error);
+      toast.error('Không thể tải xuống báo cáo. Vui lòng thử lại.');
+    }
+    
   };
 
+  // const handleAddStation = () => {
+  //   toast.info('Opening add station form...');
+  //   onNavigate('/admin/stations/new');
+  // };
+
   const handleAddStation = () => {
-    toast.info('Opening add station form...');
-    onNavigate('/admin/stations/new');
-  };
+    setIsAddStationModalOpen(true);
+};
+
+const handleCloseModal = () => {
+    setIsAddStationModalOpen(false);
+};
+
+const handleAddStationSuccess = () => {
+    toast.success('Trạm sạc đã được thêm thành công!');
+    // TODO: Refresh station list
+};
+
+
 
   const handleEditUser = (userId: string) => {
     toast.info(`Opening user editor for ${userId}`);
@@ -295,6 +321,11 @@ export function AdminDashboard({ onNavigate }: AdminDashboardProps) {
           </Table>
         </div>
       </Card>
+      <AddStationModal
+        isOpen={isAddStationModalOpen}
+        onClose={handleCloseModal}
+        onSuccess={handleAddStationSuccess}
+      />
     </div>
   );
 }
