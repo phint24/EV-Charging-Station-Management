@@ -17,7 +17,7 @@ import { jwtDecode } from 'jwt-decode';
 import {setAuthToken} from "./services/api";
 
 type ApiRole = 'ROLE_ADMIN' | 'ROLE_CSSTAFF' | 'ROLE_EVDRIVER';
-type AppRole = 'driver' | 'staff' | 'admin';
+type AppRole = 'ROLE_ADMIN' | 'ROLE_CSSTAFF' | 'ROLE_EVDRIVER';
 
 interface CurrentUser {
     email: string;
@@ -27,10 +27,10 @@ interface CurrentUser {
 }
 
 const normalizeRole = (apiRole: ApiRole): AppRole => {
-    if (apiRole === 'ROLE_EVDRIVER') return 'driver';
-    if (apiRole === 'ROLE_CSSTAFF') return 'staff';
-    if (apiRole === 'ROLE_ADMIN') return 'admin';
-    return 'driver';
+    if (apiRole === 'ROLE_EVDRIVER') return 'ROLE_EVDRIVER';
+    if (apiRole === 'ROLE_CSSTAFF') return 'ROLE_CSSTAFF';
+    if (apiRole === 'ROLE_ADMIN') return 'ROLE_ADMIN';
+    return 'ROLE_EVDRIVER';
 };
 
 function DashboardFallback({ role, onLogout }: { role: AppRole, onLogout: () => void }) {
@@ -125,11 +125,11 @@ export default function App() {
         localStorage.setItem('role', appRole); // Lưu role đã chuẩn hóa
 
         // Điều hướng CHÍNH XÁC dựa trên vai trò
-        if (appRole === 'driver') {
+        if (appRole === 'ROLE_EVDRIVER') {
             setCurrentPath('/driver/dashboard');
-        } else if (appRole === 'staff') {
+        } else if (appRole === 'ROLE_CSSTAFF') {
             setCurrentPath('/staff/dashboard');
-        } else if (appRole === 'admin') {
+        } else if (appRole === 'ROLE_ADMIN') {
             setCurrentPath('/admin/dashboard');
         }
     };
@@ -145,9 +145,9 @@ export default function App() {
     const getNavLinks = () => {
         if (!currentUser) return [];
         switch (currentUser.role) {
-            case 'driver': return driverLinks;
-            case 'staff': return staffLinks;
-            case 'admin': return adminLinks;
+            case 'ROLE_EVDRIVER': return driverLinks;
+            case 'ROLE_CSSTAFF': return staffLinks;
+            case 'ROLE_ADMIN': return adminLinks;
             default: return [];
         }
     };
@@ -172,7 +172,7 @@ export default function App() {
         }
 
         // KIỂM TRA VAI TRÒ TRƯỚC KHI RENDER
-        if (currentPath.startsWith('/driver') && currentUser.role === 'driver') {
+        if (currentPath.startsWith('/driver') && currentUser.role === 'ROLE_EVDRIVER') {
             return (
                 <DriverDashboard
                     onNavigate={handleNavigate}
@@ -182,18 +182,18 @@ export default function App() {
             );
         }
 
-        if (currentPath.startsWith('/staff') && currentUser.role === 'staff') {
+        if (currentPath.startsWith('/staff') && currentUser.role === 'ROLE_CSSTAFF') {
             return <StaffDashboard onNavigate={handleNavigate} />;
         }
 
-        if (currentPath.startsWith('/admin') && currentUser.role === 'admin') {
+        if (currentPath.startsWith('/admin') && currentUser.role === 'ROLE_ADMIN') {
             return <AdminDashboard onNavigate={handleNavigate} />;
         }
 
         // Xử lý trường hợp bị lạc (ví dụ: Admin vào /driver/dashboard)
-        if (currentUser.role === 'driver') return <DriverDashboard onNavigate={handleNavigate} isWalletDialogOpen={isWalletDialogOpen} onWalletDialogChange={setIsWalletDialogOpen} />;
-        if (currentUser.role === 'staff') return <StaffDashboard onNavigate={handleNavigate} />;
-        if (currentUser.role === 'admin') return <AdminDashboard onNavigate={handleNavigate} />;
+        if (currentUser.role === 'ROLE_EVDRIVER') return <DriverDashboard onNavigate={handleNavigate} isWalletDialogOpen={isWalletDialogOpen} onWalletDialogChange={setIsWalletDialogOpen} />;
+        if (currentUser.role === 'ROLE_CSSTAFF') return <StaffDashboard onNavigate={handleNavigate} />;
+        if (currentUser.role === 'ROLE_ADMIN') return <AdminDashboard onNavigate={handleNavigate} />;
 
         return <DashboardFallback role={currentUser.role} onLogout={handleLogout} />;
     };
@@ -215,7 +215,7 @@ export default function App() {
                     // (Truyền vai trò đã chuẩn hóa 'driver', 'admin', 'staff')
                     userRole={currentUser.role}
                     userName={currentUser.name}
-                    walletBalance={currentUser.role === 'driver' ? currentUser.walletBalance : undefined}
+                    walletBalance={currentUser.role === 'ROLE_EVDRIVER' ? currentUser.walletBalance : undefined}
                     onLogout={handleLogout}
                     onNavigate={handleNavigate}
                 />

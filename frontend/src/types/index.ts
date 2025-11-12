@@ -98,3 +98,15 @@ export interface WalletBalanceApiResponse {
     amountChanged: number;
     newBalance: number;
 }
+
+export interface WalletTopUpRequest {
+    amount: number;
+    paymentMethodId: number;
+}
+
+export interface PaymentMethodDto {
+    id: number;
+    type: 'CREDIT_CARD' | 'E_WALLET' | 'BANK_TRANSFER' | 'CASH';
+    provider: string;
+    isDefault: boolean;
+}

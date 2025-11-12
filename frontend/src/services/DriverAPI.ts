@@ -3,7 +3,7 @@ import {
     EVDriverProfileDto,
     CreateVehicleRequest,
     VehicleDto,
-    WalletBalanceApiResponse
+    WalletBalanceApiResponse, WalletTopUpRequest, PaymentMethodDto
 } from '../types';
 
 export const apiGetDriverProfile = async (): Promise<EVDriverProfileDto> => {
@@ -18,5 +18,15 @@ export const apiAddVehicle = async (data: CreateVehicleRequest): Promise<Vehicle
 
 export const apiGetBalance = async (): Promise<WalletBalanceApiResponse> => {
     const response = await API.get('/evdrivers/me/wallet');
+    return response.data;
+};
+
+export const apiTopUpWallet = async (data: WalletTopUpRequest): Promise<WalletBalanceApiResponse> => {
+    const response = await API.post('/evdrivers/me/wallet/top-up', data);
+    return response.data;
+};
+
+export const apiGetPaymentMethods = async (): Promise<PaymentMethodDto[]> => {
+    const response = await API.get('/payment-methods');
     return response.data;
 };
