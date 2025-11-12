@@ -7,7 +7,7 @@ import { StationCard } from '../../components/station/StationCard';
 import { ChargingSessionPanel } from '../../components/charging/ChargingSessionPanel';
 import { WalletPanel } from '../../components/payment/WalletPanel';
 import { QRScannerButton } from '../../components/shared/QRScannerButton';
-import { Zap, TrendingUp, Clock, DollarSign } from 'lucide-react';
+import { Zap } from 'lucide-react';
 import { toast } from 'sonner';
 import "../../styles/globals.css";
 import axios from 'axios';
@@ -15,6 +15,7 @@ import axios from 'axios';
 import { apiGetDriverProfile } from '../../services/DriverAPI';
 import {
     apiGetAllSessions,
+    apiStartSession,
     apiStopSession
 } from '../../services/ChargeSessionAPI';
 import { apiGetAllStations } from '../../services/StationAPI';
@@ -22,6 +23,7 @@ import { apiGetAllStations } from '../../services/StationAPI';
 import {
     ChargeSessionDto,
     EVDriverProfileDto,
+    CreateSessionData,
     StopSessionData,
     ChargingStationDto
 } from '../../types';
@@ -78,9 +80,11 @@ export function DriverDashboard({ onNavigate, isWalletDialogOpen, onWalletDialog
         onNavigate(`/driver/station/${stationId}`);
     };
 
-    const handleTopUp = (amount: number, method: string) => {
-        setWalletBalance((prev) => prev + amount);
-        toast.success(`Added ${new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(amount)} to wallet`);
+    const handleBalanceUpdate = (newBalance: number) => {
+        setWalletBalance(newBalance);
+        if (driverProfile) {
+            setDriverProfile({ ...driverProfile, walletBalance: newBalance });
+        }
     };
 
     const handleQRScan = (stationId: string) => {
@@ -88,28 +92,45 @@ export function DriverDashboard({ onNavigate, isWalletDialogOpen, onWalletDialog
         onNavigate(`/driver/station/${stationId}`);
     };
 
-    const stats = [
-        { icon: <Zap className="h-5 w-5" />, label: 'Total Sessions', value: '47', change: '+12% this month', color: 'text-[#0f766e]', },
-        { icon: <TrendingUp className="h-5 w-5" />, label: 'Energy Consumed', value: '1,245 kWh', change: '+8% this month', color: 'text-blue-600', },
-        { icon: <DollarSign className="h-5 w-5" />, label: 'Total Spent', value: '5,602,500 ₫', change: '-5% this month', color: 'text-green-600', },
-        { icon: <Clock className="h-5 w-5" />, label: 'Avg. Session', value: '38 min', change: '-3 min', color: 'text-orange-600', },
-    ];
+    const handleStartCharging = async () => {
+
+        if (!driverProfile) {
+            toast.error("Không tìm thấy thông tin tài xế.");
+            return;
+        }
+        if (!driverProfile.vehicles || driverProfile.vehicles.length === 0) {
+            toast.error("Bạn chưa thêm xe nào vào hồ sơ.");
+            return;
+        }
+
+        const vehicleId = driverProfile.vehicles[0].id;
+        const chargingPointId = 1;
+
+        const sessionData: CreateSessionData = {
+            driverId: driverProfile.id,
+            vehicleId: vehicleId,
+            chargingPointId: chargingPointId
+        };
+
+        try {
+            const newSession = await apiStartSession(sessionData);
+            setActiveSession(newSession);
+            toast.success('Bắt đầu phiên sạc thành công!');
+        } catch (error: any) {
+            console.error('Failed to start session:', error);
+            let errorMessage = "Không thể bắt đầu phiên sạc.";
+            if (axios.isAxiosError(error) && error.response) {
+                errorMessage = error.response.data?.message || errorMessage;
+            }
+            toast.error(errorMessage);
+        }
+    };
 
     const handleStopCharging = async () => {
         if (!activeSession) return;
 
-        const startTime = new Date(activeSession.startTime).getTime();
-        const endTime = new Date().getTime();
-
-        const hoursElapsed = (endTime - startTime) / 3600000.0;
-
-        const MOCK_POWER_KW = 50.0;
-
-        const calculatedEnergyUsed = MOCK_POWER_KW * hoursElapsed*100;
-        const roundedEnergyUsed = Math.round(calculatedEnergyUsed * 100) / 100;
-
         const stopData: StopSessionData = {
-            energyUsed: roundedEnergyUsed
+            energyUsed: 10.5
         };
 
         try {
@@ -157,21 +178,6 @@ export function DriverDashboard({ onNavigate, isWalletDialogOpen, onWalletDialog
                 <QRScannerButton onScan={handleQRScan} />
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-                {stats.map((stat) => (
-                    <Card key={stat.label} className="p-4 rounded-2xl">
-                        <div className="flex items-center justify-between mb-2">
-                            <div className={`flex h-10 w-10 items-center justify-center rounded-xl bg-gray-100 ${stat.color}`}>
-                                {stat.icon}
-                            </div>
-                        </div>
-                        <p className="text-2xl mb-1">{stat.value}</p>
-                        <p className="text-sm text-gray-600 mb-1">{stat.label}</p>
-                        <p className="text-xs text-gray-500">{stat.change}</p>
-                    </Card>
-                ))}
-            </div>
-
             <div className="grid lg:grid-cols-3 gap-6">
                 <div className="lg:col-span-2 space-y-6">
                     {activeSession ? (
@@ -180,11 +186,17 @@ export function DriverDashboard({ onNavigate, isWalletDialogOpen, onWalletDialog
                             onStop={handleStopCharging}
                         />
                     ) : (
-                        <Card className="p-6 rounded-2xl bg-blue-50 border-blue-200">
-                            <div className="flex flex-col items-center gap-2">
-                                <p className="text-lg font-medium">Bạn không có phiên sạc nào đang hoạt động.</p>
-                                <p className="text-sm text-gray-600">
-                                    Vui lòng chọn một trạm sạc từ bản đồ hoặc danh sách bên dưới để bắt đầu.
+                        <Card className="p-6 rounded-2xl">
+                            <div className="flex flex-col items-center gap-4">
+                                <p className="text-lg">Bạn không có phiên sạc nào đang hoạt động.</p>
+                                <Button
+                                    onClick={handleStartCharging}
+                                    className="bg-green-600 hover:bg-green-700 text-white"
+                                >
+                                    <Zap className="mr-2 h-4 w-4" /> Bắt đầu Sạc (Test)
+                                </Button>
+                                <p className="text-sm text-gray-500">
+                                    (Giả lập sạc tại Cổng 1, Xe đầu tiên)
                                 </p>
                             </div>
                         </Card>
@@ -217,7 +229,7 @@ export function DriverDashboard({ onNavigate, isWalletDialogOpen, onWalletDialog
                 <div className="space-y-6">
                     <WalletPanel
                         balance={walletBalance}
-                        onTopUp={handleTopUp}
+                        onBalanceUpdate={handleBalanceUpdate}
                         isOpen={isWalletDialogOpen}
                         onOpenChange={onWalletDialogChange}
                     />

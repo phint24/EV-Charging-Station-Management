@@ -1,16 +1,25 @@
 package project.code.services;
 
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import project.code.model.*;
+import project.code.model.ChargeSession;
+import project.code.model.EVDriver;
+import project.code.model.Invoice;
+import project.code.model.PaymentMethod;
+import project.code.model.User;
 import project.code.model.enums.InvoiceStatus;
+import project.code.repository.EVDriverRepository;
 import project.code.repository.InvoiceRepository;
 import project.code.repository.PaymentMethodRepository;
+import project.code.dto.invoice.InvoiceDto;
 
+import jakarta.persistence.EntityNotFoundException;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -18,18 +27,31 @@ public class InvoiceService {
 
     private final InvoiceRepository invoiceRepository;
     private final PaymentMethodRepository paymentMethodRepository;
+    private final EVDriverRepository evDriverRepository;
 
-    public List<Invoice> getAllInvoices() {
-        return invoiceRepository.findAll();
+    @Transactional(readOnly = true)
+    public List<InvoiceDto> getAllInvoices(User currentUser) {
+        EVDriver driver = findDriverProfileByUser(currentUser);
+        return invoiceRepository.findByDriver(driver)
+                .stream()
+                .map(this::mapToDto)
+                .collect(Collectors.toList());
     }
 
-    public Optional<Invoice> getInvoiceById(Long invoiceId) {
-        return invoiceRepository.findById(invoiceId);
+    @Transactional(readOnly = true)
+    public Optional<InvoiceDto> getInvoiceById(Long invoiceId, User currentUser) {
+        EVDriver driver = findDriverProfileByUser(currentUser);
+        Invoice invoice = findInvoiceByIdOrThrow(invoiceId);
+
+        if (!invoice.getDriver().getId().equals(driver.getId())) {
+            throw new AccessDeniedException("Bạn không có quyền xem hóa đơn này.");
+        }
+
+        return Optional.of(mapToDto(invoice));
     }
 
     @Transactional
-    public Invoice generateInvoiceForSession(ChargeSession completedSession) {
-
+    public InvoiceDto generateInvoiceForSession(ChargeSession completedSession) {
         if(invoiceRepository.findByChargeSession(completedSession).isPresent()) {
             throw new IllegalStateException("Hóa đơn đã tồn tại cho phiên sạc này.");
         }
@@ -47,17 +69,26 @@ public class InvoiceService {
                 .status(InvoiceStatus.PENDING)
                 .build();
 
-        return invoiceRepository.save(invoice);
+        Invoice savedInvoice = invoiceRepository.save(invoice);
+        return mapToDto(savedInvoice);
     }
 
     @Transactional
-    public Invoice payInvoice(Long invoiceId, String paymentMethodId) {
-        // 1. Tìm hóa đơn
-        Invoice invoice = invoiceRepository.findById(invoiceId)
-                .orElseThrow(() -> new RuntimeException("Không tìm thấy hóa đơn: " + invoiceId));
+    public InvoiceDto payInvoice(Long invoiceId, Long paymentMethodId, User currentUser) {
+
+        Invoice invoice = findInvoiceByIdOrThrow(invoiceId);
+        EVDriver driver = findDriverProfileByUser(currentUser);
+
+        if (!invoice.getDriver().getId().equals(driver.getId())) {
+            throw new AccessDeniedException("Bạn không có quyền thanh toán hóa đơn này.");
+        }
 
         PaymentMethod paymentMethod = paymentMethodRepository.findById(paymentMethodId)
-                .orElseThrow(() -> new RuntimeException("Không tìm thấy phương thức thanh toán: " + paymentMethodId));
+                .orElseThrow(() -> new EntityNotFoundException("Không tìm thấy phương thức thanh toán: " + paymentMethodId));
+
+        if (!paymentMethod.getDriver().getId().equals(driver.getId())) {
+            throw new AccessDeniedException("Bạn không có quyền dùng phương thức thanh toán này.");
+        }
 
         if (invoice.getStatus() == InvoiceStatus.PAID) {
             throw new IllegalStateException("Hóa đơn này đã được thanh toán.");
@@ -65,9 +96,12 @@ public class InvoiceService {
 
         invoice.setPaymentMethod(paymentMethod);
         invoice.setStatus(InvoiceStatus.PAID);
-        return invoiceRepository.save(invoice);
+
+        Invoice savedInvoice = invoiceRepository.save(invoice);
+        return mapToDto(savedInvoice);
     }
 
+    @Transactional
     public boolean deleteInvoice(Long invoiceId) {
         if (invoiceRepository.existsById(invoiceId)) {
             invoiceRepository.deleteById(invoiceId);
@@ -76,5 +110,27 @@ public class InvoiceService {
         return false;
     }
 
-    // (8) XÓA BỎ: Các hàm logic nghiệp vụ sai (generateInvoice, getInvoiceInfo)
+    // --- Helper Methods ---
+    private EVDriver findDriverProfileByUser(User user) {
+        return evDriverRepository.findByUserAccount(user)
+                .orElseThrow(() -> new EntityNotFoundException("Không tìm thấy hồ sơ EVDriver cho người dùng: " + user.getEmail()));
+    }
+
+    private Invoice findInvoiceByIdOrThrow(Long invoiceId) {
+        return invoiceRepository.findById(invoiceId)
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy hóa đơn: " + invoiceId));
+    }
+
+    private InvoiceDto mapToDto(Invoice invoice) {
+        return new InvoiceDto(
+                invoice.getInvoiceId(),
+                invoice.getChargeSession().getSessionId(),
+                invoice.getDriver().getId(),
+                invoice.getIssueDate(),
+                invoice.getTotalEnergy(),
+                invoice.getAmount(),
+                invoice.getPaymentMethod() != null ? invoice.getPaymentMethod().getMethodId() : null,
+                invoice.getStatus()
+        );
+    }
 }

@@ -76,7 +76,7 @@ public class JwtConfig {
     }
 
     // Trích xuất toàn bộ thông tin (claims) từ token
-    private Claims extractAllClaims(String token) {
+    public Claims extractAllClaims(String token) {
         return Jwts.parserBuilder()
                 .setSigningKey(getSignInKey())
                 .build()

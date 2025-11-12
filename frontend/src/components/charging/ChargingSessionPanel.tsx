@@ -4,7 +4,7 @@ import { Card } from '../ui/card';
 import { Button } from '../ui/button';
 import { Progress } from '../ui/progress';
 import { Badge } from '../ui/badge';
-import { ChargeSessionDto } from '../../services/ChargeSessionAPI';
+import { ChargeSessionDto } from '../../types/index';
 import "../../styles/globals.css"
 
 interface ChargingSessionPanelProps {

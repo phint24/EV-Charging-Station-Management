@@ -10,7 +10,7 @@ public record WalletTopUpRequest(
         @Positive(message = "Số tiền nạp phải là số dương")
         Double amount,
 
-        @NotBlank(message = "ID phương thức thanh toán không được để trống")
+        @NotNull(message = "ID phương thức thanh toán không được để trống")
         Long paymentMethodId
 ) {
 }
