@@ -64,14 +64,13 @@ export interface StopSessionData {
 }
 
 export interface ChargingStationDto {
-    stationId: number;
-    name: string;
-    location: string;
-    status: 'AVAILABLE' | 'IN_USE' | 'OFFLINE' | 'FAULTED';
-    totalChargingPoint: number;
-    availableChargers: number;
+  stationId: number;
+  name: string;
+  location: string;
+  status: 'AVAILABLE' | 'IN_USE' | 'OFFLINE' | 'FAULTED'; // thêm FAULTED
+  totalChargingPoint: number;
+  availableChargers: number;
 }
-
 export interface ChargingPointDto {
     chargingPointId: number;
     stationId: number;
@@ -109,4 +108,21 @@ export interface PaymentMethodDto {
     type: 'CREDIT_CARD' | 'E_WALLET' | 'BANK_TRANSFER' | 'CASH';
     provider: string;
     isDefault: boolean;
+}
+
+export interface Station {
+  id: number;
+  name: string;
+  location: string;
+  ports: number;
+  status: 'active' | 'maintenance' | 'offline';
+  description?: string;
+  operatingHours?: string;
+}
+
+export interface ChargingPoint {
+  id: number;
+  name: string;
+  status: 'active' | 'maintenance' | 'offline';
+  stationId: number;
 }
