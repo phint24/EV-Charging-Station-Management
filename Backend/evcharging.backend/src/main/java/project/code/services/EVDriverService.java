@@ -152,22 +152,13 @@ public class EVDriverService {
 
         EVDriver driver = findDriverProfileByUser(currentUser);
 
-        PaymentMethod paymentMethod = paymentMethodRepository.findByMethodId(request.paymentMethodId())
-                .orElseThrow(() -> new EntityNotFoundException("Không tìm thấy phương thức thanh toán ID: " + request.paymentMethodId()));
-
-        if (!paymentMethod.getDriver().getId().equals(driver.getId())) {
-            throw new AccessDeniedException("Lỗi bảo mật: Bạn không có quyền dùng phương thức thanh toán này.");
-        }
-
-        boolean paymentSuccess = true; // Giả sử luôn thành công
-
-        if (!paymentSuccess) {
-            throw new RuntimeException("Thanh toán thất bại. Vui lòng thử lại.");
-        }
-
         double oldBalance = driver.getWalletBalance();
         double amountToAdd = request.amount();
         double newBalance = oldBalance + amountToAdd;
+
+        System.out.println("Driver ID: " + driver.getId());
+        System.out.println("Số dư cũ (từ DB): " + oldBalance);
+        System.out.println("Số dư mới (đã tính toán): " + newBalance);
 
         driver.setWalletBalance(newBalance);
         evDriverRepository.save(driver);

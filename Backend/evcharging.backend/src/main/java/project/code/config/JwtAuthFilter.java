@@ -13,12 +13,20 @@ import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import io.jsonwebtoken.Claims;
+import java.util.List;
+import java.util.stream.Collectors;
 
 import java.io.IOException;
 
 @Component
-@RequiredArgsConstructor // Tự động @Autowired các trường final
+@RequiredArgsConstructor
 public class JwtAuthFilter extends OncePerRequestFilter {
+
+    private static final Logger logger = LoggerFactory.getLogger(JwtAuthFilter.class);
 
     private final JwtConfig jwtService;
     private final UserDetailsService userDetailsService;
@@ -34,40 +42,63 @@ public class JwtAuthFilter extends OncePerRequestFilter {
         final String jwt;
         final String userEmail;
 
-        // 1. Kiểm tra header 'Authorization'
+        //log check
+        logger.info("JwtAuthFilter: Request to URI: {}", request.getRequestURI());
+        logger.info("JwtAuthFilter: Authorization Header: {}", authHeader);
+
         if (authHeader == null || !authHeader.startsWith("Bearer ")) {
-            filterChain.doFilter(request, response); // Bỏ qua và cho request đi tiếp
+            filterChain.doFilter(request, response);
             return;
         }
 
-        // 2. Lấy token từ header
-        jwt = authHeader.substring(7); // Bỏ qua "Bearer "
+        jwt = authHeader.substring(7);
 
-        // 3. Trích xuất email từ token
-        userEmail = jwtService.extractEmail(jwt);
+        try {
+            userEmail = jwtService.extractEmail(jwt);
 
-        // 4. Nếu có email và user chưa được xác thực (chưa login)
-        if (userEmail != null && SecurityContextHolder.getContext().getAuthentication() == null) {
-            // Lấy thông tin UserDetails từ database
-            UserDetails userDetails = this.userDetailsService.loadUserByUsername(userEmail);
+            if (userEmail != null && SecurityContextHolder.getContext().getAuthentication() == null) {
 
-            // 5. Kiểm tra token có hợp lệ không
-            if (jwtService.isTokenValid(jwt, userDetails)) {
-                // Tạo một đối tượng xác thực
-                UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(
-                        userDetails,
-                        null, // Không cần credentials (password)
-                        userDetails.getAuthorities()
-                );
-                authToken.setDetails(
-                        new WebAuthenticationDetailsSource().buildDetails(request)
-                );
+                //Lấy UserDetails để kiểm tra token
+                UserDetails userDetails = this.userDetailsService.loadUserByUsername(userEmail);
 
-                // 6. Lưu thông tin xác thực vào SecurityContext
-                // Spring Security sẽ hiểu là user này đã được đăng nhập
-                SecurityContextHolder.getContext().setAuthentication(authToken);
+                //Lấy Claims và Roles từ Token
+                final Claims claims = jwtService.extractAllClaims(jwt);
+                final List<String> roles = claims.get("roles", List.class);
+
+                if (roles == null) {
+                    logger.warn("JwtAuthFilter: Token for user {} does not contain 'roles' claim.", userEmail);
+                    filterChain.doFilter(request, response);
+                    return;
+                }
+
+                List<SimpleGrantedAuthority> authorities = roles.stream()
+                        .map(roleString -> new SimpleGrantedAuthority(roleString))
+                        .collect(Collectors.toList());
+
+                logger.info("JwtAuthFilter: User: {}. Roles from Token: {}", userEmail, authorities);
+
+
+                // Kiểm tra token có hợp lệ không
+                if (jwtService.isTokenValid(jwt, userDetails)) {
+
+                    UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(
+                            userDetails,
+                            null,
+                            authorities // <-- Dùng quyền từ Token
+                    );
+                    authToken.setDetails(
+                            new WebAuthenticationDetailsSource().buildDetails(request)
+                    );
+
+                    // 6. Lưu thông tin xác thực vào SecurityContext
+                    SecurityContextHolder.getContext().setAuthentication(authToken);
+                    logger.info("JwtAuthFilter: Authenticated user: {} successfully.", userEmail);
+                }
             }
+        } catch (Exception e) {
+            logger.error("!!! JwtAuthFilter Error: {} !!!", e.getMessage());
         }
-        filterChain.doFilter(request, response); // Cho request đi tiếp
+
+        filterChain.doFilter(request, response);
     }
 }

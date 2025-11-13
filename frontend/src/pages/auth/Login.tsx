@@ -13,18 +13,8 @@ import { AuthResponse } from '../../types';
 
 import axios from 'axios';
 
-type ApiRole = 'ROLE_ADMIN' | 'ROLE_CSSTAFF' | 'ROLE_EVDRIVER';
-type AppRole = 'driver' | 'staff' | 'admin';
-
-const normalizeRole = (apiRole: ApiRole): AppRole => {
-    if (apiRole === 'ROLE_EVDRIVER') return 'driver';
-    if (apiRole === 'ROLE_CSSTAFF') return 'staff';
-    if (apiRole === 'ROLE_ADMIN') return 'admin';
-    return 'driver'; // Mặc định
-};
-
 interface LoginProps {
-    onLogin: (role: AppRole) => void;
+    onLogin: (response: AuthResponse) => void;
     onNavigate: (path: string) => void;
 }
 
@@ -38,9 +28,10 @@ export function Login({ onLogin, onNavigate }: LoginProps) {
         try {
             const response = await apiLogin(loginEmail, loginPassword);
             setAuthToken(response.token);
-            const appRole = normalizeRole(response.role);
-            toast.success(`Đăng nhập thành công với vai trò ${appRole}!`);
-            onLogin(appRole);
+
+            toast.success(`Đăng nhập thành công với vai trò ${response.role}!`);
+
+            onLogin(response);
 
         } catch (error) {
             console.error('Login failed:', error);
@@ -75,7 +66,6 @@ export function Login({ onLogin, onNavigate }: LoginProps) {
     return (
         <div className="min-h-screen bg-gradient-to-br from-[#0f766e] to-[#0ea5a4] flex items-center justify-center p-4">
             <Card className="w-full max-w-md p-8 rounded-2xl">
-                {/* Logo */}
                 <div className="flex flex-col items-center mb-8">
                     <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-[#0f766e] mb-4">
                         <Zap className="h-10 w-10 text-white" />
@@ -84,7 +74,6 @@ export function Login({ onLogin, onNavigate }: LoginProps) {
                     <p className="text-gray-600 text-center">Sign in to your EV Charge account</p>
                 </div>
 
-                {/* Login Form */}
                 <form onSubmit={handleSubmit} className="space-y-4 mb-6">
                     <div>
                         <Label htmlFor="email">Email</Label>

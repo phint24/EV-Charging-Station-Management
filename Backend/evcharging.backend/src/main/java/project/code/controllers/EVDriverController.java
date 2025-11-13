@@ -97,8 +97,18 @@ public class EVDriverController {
             @Valid @RequestBody WalletTopUpRequest request) {
 
         User currentUser = getCurrentUser();
-        WalletBalanceApiResponse updatedBalance = evDriverService.topUpWallet(currentUser, request);
-        return ResponseEntity.ok(updatedBalance);
+
+        try {
+            WalletBalanceApiResponse updatedBalance = evDriverService.topUpWallet(currentUser, request);
+
+            System.out.println("--- DEBUG: Service 'topUpWallet' đã thực thi thành công.");
+
+            return ResponseEntity.ok(updatedBalance);
+
+        } catch (Exception e) {
+            System.err.println("!!! LỖI TẠI EVDriverController: " + e.getMessage() + " !!!");
+            throw e;
+        }
     }
 
     private User getCurrentUser() {
