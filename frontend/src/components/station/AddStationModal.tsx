@@ -94,7 +94,7 @@ export function AddStationModal({ isOpen, onClose, onSuccess }: AddStationModalP
 
         setIsLoading(true);
         try {
-            const requestBody: CreateStationRequest = {git
+            const requestBody: CreateStationRequest = {
                 name: formData.name.trim(),
                 location: formData.location.trim(),
                 status: formData.status,

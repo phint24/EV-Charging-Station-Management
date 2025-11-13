@@ -20,6 +20,8 @@ import {
 } from '../../services/ChargeSessionAPI';
 import { apiGetAllStations } from '../../services/StationAPI';
 
+import { InvoiceModal } from '../../components/Invoice/InvoiceModal';
+
 import {
     ChargeSessionDto,
     EVDriverProfileDto,
@@ -41,6 +43,9 @@ export function DriverDashboard({ onNavigate, isWalletDialogOpen, onWalletDialog
     const [stations, setStations] = useState<ChargingStationDto[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [walletBalance, setWalletBalance] = useState(0);
+
+    const [completedSession, setCompletedSession] = useState<ChargeSessionDto | null>(null);
+    const [isInvoiceModalOpen, setIsInvoiceModalOpen] = useState(false);
 
     useEffect(() => {
         const loadDashboardData = async () => {
@@ -126,20 +131,25 @@ export function DriverDashboard({ onNavigate, isWalletDialogOpen, onWalletDialog
         }
     };
 
-    const handleStopCharging = async () => {
+    const handleStopCharging = async (finalEnergy: number) => {
         if (!activeSession) return;
+        const roundedEnergyUsed = Math.round(finalEnergy * 100) / 100;
 
         const stopData: StopSessionData = {
-            energyUsed: 10.5
+            energyUsed: roundedEnergyUsed
         };
 
         try {
             const stoppedSession = await apiStopSession(activeSession.sessionId, stopData);
 
             setActiveSession(null);
-            toast.success('Đã dừng phiên sạc.');
 
-            setWalletBalance(prev => prev - stoppedSession.cost);
+            setWalletBalance(prevBalance => prevBalance - stoppedSession.cost);
+
+            setCompletedSession(stoppedSession);
+            setIsInvoiceModalOpen(true);
+
+            toast.success('Đã dừng phiên sạc.');
 
         } catch (error: any) {
             console.error('Failed to stop session:', error);
@@ -149,6 +159,11 @@ export function DriverDashboard({ onNavigate, isWalletDialogOpen, onWalletDialog
             }
             toast.error(errorMessage);
         }
+    };
+
+    const handleInvoiceModalClose = () => {
+        setIsInvoiceModalOpen(false);
+        setCompletedSession(null);
     };
 
     if (isLoading) {
@@ -193,10 +208,9 @@ export function DriverDashboard({ onNavigate, isWalletDialogOpen, onWalletDialog
                                     onClick={handleStartCharging}
                                     className="bg-green-600 hover:bg-green-700 text-white"
                                 >
-                                    <Zap className="mr-2 h-4 w-4" /> Bắt đầu Sạc (Test)
+                                    <Zap className="mr-2 h-4 w-4" /> Bắt đầu Sạc
                                 </Button>
                                 <p className="text-sm text-gray-500">
-                                    (Giả lập sạc tại Cổng 1, Xe đầu tiên)
                                 </p>
                             </div>
                         </Card>
@@ -235,6 +249,14 @@ export function DriverDashboard({ onNavigate, isWalletDialogOpen, onWalletDialog
                     />
                 </div>
             </div>
+
+            {completedSession && (
+                <InvoiceModal
+                    isOpen={isInvoiceModalOpen}
+                    onClose={handleInvoiceModalClose}
+                    session={completedSession}
+                />
+            )}
         </div>
     );
 }

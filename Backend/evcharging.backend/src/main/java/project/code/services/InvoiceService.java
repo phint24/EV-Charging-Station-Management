@@ -66,7 +66,7 @@ public class InvoiceService {
                 .issueDate(LocalDateTime.now())
                 .totalEnergy(completedSession.getEnergyUsed())
                 .amount(completedSession.getCost())
-                .status(InvoiceStatus.PENDING)
+                .status(InvoiceStatus.PAID)
                 .build();
 
         Invoice savedInvoice = invoiceRepository.save(invoice);
