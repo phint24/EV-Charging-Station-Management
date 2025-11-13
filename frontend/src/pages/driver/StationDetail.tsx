@@ -66,7 +66,6 @@ export function StationDetail({ stationId, onNavigate }: StationDetailProps) {
     }, [stationId]);
 
     const handleStartCharging = async () => {
-        // (A) SỬA LỖI: Thêm kiểm tra 'profile' (Type Guard)
         if (!profile) {
             toast.error("Không tìm thấy thông tin tài xế.");
             return;
@@ -83,7 +82,6 @@ export function StationDetail({ stationId, onNavigate }: StationDetailProps) {
         setIsStartingSession(true);
 
         const sessionData: CreateSessionData = {
-            // (B) Code ở đây giờ đã an toàn
             driverId: profile.id,
             vehicleId: selectedVehicleId,
             chargingPointId: selectedPointId
