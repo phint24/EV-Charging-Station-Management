@@ -1,5 +1,4 @@
-import { useState } from 'react'; // Thêm dòng này 
-import { X } from 'lucide-react'; // Thêm dòng này
+import { useState, useEffect } from 'react'; 
 import { Card } from '../../components/ui/card';
 import { Badge } from '../../components/ui/badge';
 import { Button } from '../../components/ui/button';
@@ -17,14 +16,116 @@ import { TrendingUp, Users, MapPin, DollarSign, Zap, AlertCircle, Download, Plus
 import { revenueByStation, utilizationByHour } from '../../data/sample';
 import { toast } from 'sonner';
 import { exportRevenueReport } from '../../services/ReportAPI';
-import { AddStationModal } from '../../components/station/AddStationModal'; // Thêm dòng này
+import { AddStationModal } from '../../components/station/AddStationModal'; 
+import { apiGetAllStations, apiUpdateStation, UpdateStationRequest } from '../../services/StationAPI';
+import { ChargingStationDto } from '../../types';
+import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "../../components/ui/select";
+
+
 
 interface AdminDashboardProps {
   onNavigate: (path: string) => void;
 }
+interface Station {
+  id: number;
+  name: string;
+  location: string;
+  ports: number;
+  status: 'active' | 'maintenance' | 'offline';
+  description?: string;
+  operatingHours?: string;
+}
 
 export function AdminDashboard({ onNavigate }: AdminDashboardProps) {
-  const [isAddStationModalOpen, setIsAddStationModalOpen] = useState(false); // Thêm dòng này 
+  const [isAddStationModalOpen, setIsAddStationModalOpen] = useState(false); 
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [selectedStation, setSelectedStation] = useState<Station | null>(null);
+  const [stations, setStations] = useState<Station[]>([]);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [editingStation, setEditingStation] = useState<Station | null>(null);
+  const [newStatus, setNewStatus] = useState<'active' | 'maintenance' | 'offline'>('active');
+
+
+  const mapFrontendToBackendStatus = (status: 'active' | 'maintenance' | 'offline'): 'AVAILABLE' | 'IN_USE' | 'OFFLINE' => {
+  return status === 'active'
+    ? 'AVAILABLE'
+    : status === 'maintenance'
+    ? 'IN_USE'
+    : 'OFFLINE';
+};
+const mapBackendToFrontendStatus = (status: 'AVAILABLE' | 'IN_USE' | 'OFFLINE' | 'FAULTED') =>
+  status === 'AVAILABLE'
+    ? 'active'
+    : status === 'IN_USE'
+    ? 'maintenance'
+    : 'offline'; 
+useEffect(() => {
+  const fetchStations = async () => {
+    try {
+      const data: ChargingStationDto[] = await apiGetAllStations();
+      const mappedStations: Station[] = data.map((dto) => ({
+        id: dto.stationId,
+        name: dto.name,
+        location: dto.location,
+        ports: dto.totalChargingPoint,
+        status:
+          dto.status === 'AVAILABLE'
+            ? 'active'
+            : dto.status === 'IN_USE'
+            ? 'maintenance'
+            : 'offline', 
+        description: undefined,
+        operatingHours: undefined,
+      }));
+      setStations(mappedStations);
+    } catch (err) {
+      console.error('Failed to fetch stations', err);
+    }
+  };
+    fetchStations();
+  }, []);
+
+  const handleSaveStatus = async () => {
+  if (!editingStation) return;
+
+  try {
+    const backendStatus = mapFrontendToBackendStatus(newStatus);
+    const data: UpdateStationRequest = {
+      name: editingStation.name,              
+      location: editingStation.location,     
+      status: backendStatus,                  
+      totalChargingPoint: editingStation.ports,  
+      availableChargers: editingStation.ports,    
+    };
+    const updatedStation = await apiUpdateStation(editingStation.id, data);
+    toast.success('Cập nhật trạng thái thành công!');
+    setStations((prev) =>
+      prev.map((s) =>
+        s.id === editingStation.id
+          ? { ...s, status: mapBackendToFrontendStatus(updatedStation.status) }
+          : s
+      )
+    );
+
+    setIsEditModalOpen(false);
+  } catch (err) {
+    toast.error('Cập nhật thất bại!');
+    console.error(err);
+  }
+};
+
+  const handleView = (station: Station) => {
+    setSelectedStation(station);
+    setIsModalOpen(true);
+  };
+  const handleEditStatus = (station: Station) => {
+  setEditingStation(station);
+  setNewStatus(station.status);
+  setIsEditModalOpen(true);
+  };
+
+  
+
   const stats = [
     {
       icon: <DollarSign className="h-6 w-6" />,
@@ -71,7 +172,6 @@ export function AdminDashboard({ onNavigate }: AdminDashboardProps) {
     { id: 'u-003', name: 'Le Van C', email: 'levanc@email.com', role: 'staff', status: 'active', joined: '2025-10-22' },
     { id: 'u-004', name: 'Pham Thi D', email: 'phamthid@email.com', role: 'driver', status: 'inactive', joined: '2025-10-23' },
   ];
-
   // Mock alerts
   const alerts = [
     { id: 'a-001', type: 'warning', message: 'Station "Tech Park" offline for 2 hours', time: '15 min ago' },
@@ -90,12 +190,6 @@ export function AdminDashboard({ onNavigate }: AdminDashboardProps) {
     }
     
   };
-
-  // const handleAddStation = () => {
-  //   toast.info('Opening add station form...');
-  //   onNavigate('/admin/stations/new');
-  // };
-
   const handleAddStation = () => {
     setIsAddStationModalOpen(true);
 };
@@ -109,8 +203,6 @@ const handleAddStationSuccess = () => {
     // TODO: Refresh station list
 };
 
-
-
   const handleEditUser = (userId: string) => {
     toast.info(`Opening user editor for ${userId}`);
     // Open user edit modal or navigate to edit page
@@ -119,6 +211,7 @@ const handleAddStationSuccess = () => {
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(amount);
   };
+  
 
   return (
     <div className="space-y-6">
@@ -202,72 +295,121 @@ const handleAddStationSuccess = () => {
       </div>
 
       {/* AI Insights & Alerts */}
-      <div className="grid lg:grid-cols-3 gap-6">
+      <div className="grid  gap-6">
         {/* AI Suggestions */}
-        <Card className="p-6 rounded-2xl bg-gradient-to-br from-blue-50 to-purple-50 border-blue-200">
-          <div className="flex items-center gap-2 mb-4">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-600 text-white">
-              <TrendingUp className="h-5 w-5" />
-            </div>
-            <h3>AI Insights</h3>
+          <Card className="p-6 rounded-2xl w-full max-w-full">
+          <div className="flex items-center justify-between mb-4">
+            <h2>Station List</h2>
           </div>
-          <div className="space-y-3">
-            <div className="bg-white rounded-xl p-3">
-              <p className="text-sm mb-1">Peak Hour Prediction</p>
-              <p className="text-xs text-gray-600">
-                Expected 35% surge in demand at Central Plaza between 18:00-20:00. Consider activating all ports.
-              </p>
-            </div>
-            <div className="bg-white rounded-xl p-3">
-              <p className="text-sm mb-1">Expansion Opportunity</p>
-              <p className="text-xs text-gray-600">
-                District 7 shows high search volume but limited stations. ROI estimated at 18 months.
-              </p>
-            </div>
-            <div className="bg-white rounded-xl p-3">
-              <p className="text-sm mb-1">Maintenance Alert</p>
-              <p className="text-xs text-gray-600">
-                3 stations approaching 10,000 session milestone. Schedule preventive maintenance.
-              </p>
-            </div>
+
+          <div className="rounded-2xl border overflow-x-auto w-full">
+            <Table className="min-w-full">
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Name</TableHead>
+                  <TableHead>Location</TableHead>
+                  <TableHead>Ports</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead>Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {stations.map((station) => (
+                  <TableRow key={station.id}>
+                    <TableCell>{station.name}</TableCell>
+                    <TableCell>{station.location}</TableCell>
+                    <TableCell>{station.ports}</TableCell>
+                    <TableCell>
+                      <Badge
+                        className={
+                          station.status === 'active'
+                            ? 'bg-green-500'
+                            : station.status === 'maintenance'
+                            ? 'bg-yellow-500'
+                            : 'bg-red-500'
+                        }
+                      >
+                        {station.status}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => handleView(station)}
+                      >
+                        View
+                      </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => handleEditStatus(station)}
+                        >
+                          Edit
+                        </Button>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
           </div>
         </Card>
+        {isModalOpen && selectedStation && (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+            <div className="bg-white rounded-2xl p-6 w-11/12 max-w-xl relative text-center">
+              <h3 className="text-2xl font-semibold mb-4">{selectedStation.name}</h3>
+              <p><strong>Location:</strong> {selectedStation.location}</p>
+              <p><strong>Ports:</strong> {selectedStation.ports}</p>
+              <p>
+                <strong>Status:</strong>{' '}
+                <Badge
+                  className={
+                    selectedStation.status === 'active'
+                      ? 'bg-green-500'
+                      : selectedStation.status === 'maintenance'
+                      ? 'bg-yellow-500'
+                      : 'bg-red-500'
+                  }
+                >
+                  {selectedStation.status}
+                </Badge>
+              </p>
+              {selectedStation.description && <p><strong>Description:</strong> {selectedStation.description}</p>}
+              {selectedStation.operatingHours && <p><strong>Operating Hours:</strong> {selectedStation.operatingHours}</p>}
 
-        {/* System Alerts */}
-        <Card className="p-6 rounded-2xl lg:col-span-2">
-          <h2 className="mb-4">System Alerts</h2>
-          <div className="space-y-3">
-            {alerts.map((alert) => (
-              <div
-                key={alert.id}
-                className={`flex items-start gap-3 p-3 rounded-xl border ${
-                  alert.type === 'error'
-                    ? 'bg-red-50 border-red-200'
-                    : alert.type === 'warning'
-                    ? 'bg-orange-50 border-orange-200'
-                    : 'bg-blue-50 border-blue-200'
-                }`}
-              >
-                <AlertCircle
-                  className={`h-5 w-5 flex-shrink-0 ${
-                    alert.type === 'error'
-                      ? 'text-red-600'
-                      : alert.type === 'warning'
-                      ? 'text-orange-600'
-                      : 'text-blue-600'
-                  }`}
-                />
-                <div className="flex-1">
-                  <p className="text-sm">{alert.message}</p>
-                  <p className="text-xs text-gray-500 mt-1">{alert.time}</p>
-                </div>
-                <Button size="sm" variant="ghost">
-                  View
+              <Button className="mt-4 mx-auto" onClick={() => setIsModalOpen(false)}>Close</Button>
+            </div>
+          </div>
+        )}
+        {isEditModalOpen && editingStation && (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+            <div className="bg-white rounded-2xl p-6 w-11/12 max-w-md text-center">
+              <h3 className="text-lg font-semibold mb-4">
+                Chỉnh sửa trạng thái: {editingStation.name}
+              </h3>
+
+              <Select value={newStatus} onValueChange={(val) => setNewStatus(val as any)}>
+                <SelectTrigger className="w-full mb-4">
+                  <SelectValue placeholder="Chọn trạng thái" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="active"> Active</SelectItem>
+                  <SelectItem value="maintenance"> Maintenance</SelectItem>
+                  <SelectItem value="offline"> Offline</SelectItem>
+                </SelectContent>
+              </Select>
+
+              <div className="flex justify-end gap-2 mt-4">
+                <Button variant="outline" onClick={() => setIsEditModalOpen(false)}>
+                  Hủy
+                </Button>
+                <Button className="bg-[#0f766e]" onClick={handleSaveStatus}>
+                  Lưu
                 </Button>
               </div>
-            ))}
+            </div>
           </div>
-        </Card>
+        )}
       </div>
 
       {/* Recent Users */}

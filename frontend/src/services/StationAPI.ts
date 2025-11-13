@@ -14,12 +14,19 @@ export interface CreateStationRequest {
 }
 
 // Interface matching UpdateStationRequest from backend, Thêm đoạn này 
+// export interface UpdateStationRequest {
+//     name: string;
+//     location: string;
+//     status: 'ACTIVE' | 'INACTIVE' | 'MAINTENANCE';
+//     totalChargingPoint: number;
+//     availableChargers: number;
+// }
 export interface UpdateStationRequest {
-    name: string;
-    location: string;
-    status: 'ACTIVE' | 'INACTIVE' | 'MAINTENANCE';
-    totalChargingPoint: number;
-    availableChargers: number;
+  name: string;
+  location: string;
+  status: 'AVAILABLE' | 'IN_USE' | 'OFFLINE'; // phải match backend enum
+  totalChargingPoint: number;
+  availableChargers: number;
 }
 
 export const apiGetAllStations = async (): Promise<ChargingStationDto[]> => {
