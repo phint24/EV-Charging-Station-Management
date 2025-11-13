@@ -1,8 +1,9 @@
-import { useState, useEffect } from 'react'; 
+import { useState, useEffect } from 'react';
 import { Card } from '../../components/ui/card';
 import { Badge } from '../../components/ui/badge';
 import { Button } from '../../components/ui/button';
 import "../../styles/globals.css"
+import { apiGetAllUsers, UserDto } from '../../services/UserAPI';
 import {
   Table,
   TableBody,
@@ -415,7 +416,7 @@ const handleAddStationSuccess = () => {
       {/* Recent Users */}
       <Card className="p-6 rounded-2xl">
         <div className="flex items-center justify-between mb-4">
-          <h2>Recent Users</h2>
+          <h2>Information Account</h2>
           <Button variant="outline" onClick={() => onNavigate('/admin/users')}>
             View All
           </Button>
@@ -428,34 +429,28 @@ const handleAddStationSuccess = () => {
                 <TableHead>Email</TableHead>
                 <TableHead>Role</TableHead>
                 <TableHead>Status</TableHead>
-                <TableHead>Joined</TableHead>
-                <TableHead>Actions</TableHead>
+                {/* <TableHead>Joined</TableHead> */}
+                {/* <TableHead>Actions</TableHead> */}
               </TableRow>
             </TableHeader>
             <TableBody>
-              {recentUsers.map((user) => (
+              {users.map((user) => (
                 <TableRow key={user.id}>
                   <TableCell>{user.name}</TableCell>
                   <TableCell>{user.email}</TableCell>
                   <TableCell>
                     <Badge variant="outline" className="capitalize">
-                      {user.role}
+                      {user.role.replace('ROLE_', '').toLowerCase()}
                     </Badge>
                   </TableCell>
                   <TableCell>
-                    <Badge className={user.status === 'active' ? 'bg-green-500' : 'bg-gray-500'}>
-                      {user.status}
-                    </Badge>
+                    <Badge className="bg-green-500">active</Badge>
                   </TableCell>
-                  <TableCell>{user.joined}</TableCell>
+                  {/* <TableCell>2025-11-01</TableCell> tạm thời mock ngày */}
                   <TableCell>
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      onClick={() => handleEditUser(user.id)}
-                    >
+                    {/* <Button size="sm" variant="ghost" onClick={() => handleEditUser(user.id.toString())}>
                       Edit
-                    </Button>
+                    </Button> */}
                   </TableCell>
                 </TableRow>
               ))}
