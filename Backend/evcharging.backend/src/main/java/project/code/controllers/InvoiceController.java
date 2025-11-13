@@ -19,7 +19,6 @@ import java.util.Optional;
 @RestController
 @RequestMapping("/api/invoices")
 @RequiredArgsConstructor
-@PreAuthorize("hasRole('EVDRIVER')")
 public class InvoiceController {
 
     private final InvoiceService invoiceService;

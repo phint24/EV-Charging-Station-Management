@@ -9,7 +9,7 @@ import "../../styles/globals.css"
 
 interface ChargingSessionPanelProps {
     session: ChargeSessionDto;
-    onStop: () => void;
+    onStop: (finalEnergy: number) => void;
 }
 
 export function ChargingSessionPanel({ session, onStop }: ChargingSessionPanelProps) {
@@ -22,7 +22,7 @@ export function ChargingSessionPanel({ session, onStop }: ChargingSessionPanelPr
         const interval = setInterval(() => {
             setCurrentSoc((prev:any) => Math.min(prev + 0.5, 100));
             setCurrentKwh((prev:any) => prev + 0.3);
-            setCurrentCost((prev:any) => prev + 1350);
+            setCurrentCost((prev:any) => prev + 300);
             setElapsedTime((prev) => prev + 1);
         }, 3000);
 
@@ -60,7 +60,7 @@ export function ChargingSessionPanel({ session, onStop }: ChargingSessionPanelPr
                 </div>
             </div>
 
-            {/* State of Charge (Giữ nguyên mô phỏng) */}
+            {/* State of Charge */}
             <div className="mb-6">
                 <div className="flex items-center justify-between mb-2">
                     <div className="flex items-center gap-2">
@@ -104,8 +104,6 @@ export function ChargingSessionPanel({ session, onStop }: ChargingSessionPanelPr
                     <p className="text-xl">{formatCurrency(currentCost)}</p>
                 </div>
 
-                {/* (7) SỬA LỖI: Xóa bỏ "Time Remaining" (không có trong DTO) */}
-                {/* Bạn có thể thay thế bằng "Vehicle ID" hoặc "Driver ID" nếu muốn */}
                 <div className="bg-gray-50 rounded-xl p-4">
                     <div className="flex items-center gap-2 mb-1">
                         <Clock className="h-4 w-4 text-[#0f766e]" />
@@ -117,7 +115,7 @@ export function ChargingSessionPanel({ session, onStop }: ChargingSessionPanelPr
 
             {/* Stop Button */}
             <Button
-                onClick={onStop}
+                onClick={() => onStop(currentKwh)}
                 variant="destructive"
                 className="w-full"
                 size="lg"
