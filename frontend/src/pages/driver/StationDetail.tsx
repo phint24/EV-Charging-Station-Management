@@ -241,14 +241,6 @@ export function StationDetail({ stationId, onNavigate }: StationDetailProps) {
                 </div>
 
                 <div className="space-y-6">
-                    <Card className="p-6 rounded-2xl bg-gradient-to-br from-[#0f766e] to-[#0ea5a4] text-white">
-                        <div className="flex items-center gap-2 mb-4">
-                            <DollarSign className="h-5 w-5" />
-                            <h3 className="text-white">Pricing (Demo)</h3>
-                        </div>
-                        <p className="text-3xl mb-2">4,500 ₫</p>
-                        <p className="text-sm text-white/80 mb-4">per kWh</p>
-                    </Card>
 
                     <Card className="p-6 rounded-2xl">
                         <div className="flex items-center gap-2 mb-4">

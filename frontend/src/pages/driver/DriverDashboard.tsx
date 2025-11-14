@@ -7,27 +7,31 @@ import { StationCard } from '../../components/station/StationCard';
 import { ChargingSessionPanel } from '../../components/charging/ChargingSessionPanel';
 import { WalletPanel } from '../../components/payment/WalletPanel';
 import { QRScannerButton } from '../../components/shared/QRScannerButton';
-import { Zap } from 'lucide-react';
+import { Zap, Car, Plus, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 import "../../styles/globals.css";
 import axios from 'axios';
 
-import { apiGetDriverProfile } from '../../services/DriverAPI';
+import {
+    apiGetDriverProfile,
+    apiAddVehicle,
+    apiDeleteVehicle
+} from '../../services/DriverAPI';
 import {
     apiGetAllSessions,
     apiStartSession,
     apiStopSession
 } from '../../services/ChargeSessionAPI';
 import { apiGetAllStations } from '../../services/StationAPI';
-
-import { InvoiceModal } from '../../components/Invoice/InvoiceModal';
+import { AddVehicleModal } from '../../components/vehicle/AddVehicleModal';
 
 import {
     ChargeSessionDto,
     EVDriverProfileDto,
     CreateSessionData,
     StopSessionData,
-    ChargingStationDto
+    ChargingStationDto,
+    VehicleDto
 } from '../../types';
 
 interface DriverDashboardProps {
@@ -35,6 +39,24 @@ interface DriverDashboardProps {
     isWalletDialogOpen?: boolean;
     onWalletDialogChange?: (open: boolean) => void;
 }
+
+function VehicleCard({ vehicle, onDelete }: { vehicle: VehicleDto, onDelete: () => void }) {
+    return (
+        <div className="p-4 rounded-lg border bg-white flex items-center justify-between">
+            <div className="flex items-center gap-3">
+                <Car className="h-6 w-6 text-[#0f766e]" />
+                <div>
+                    <p className="font-medium">{vehicle.brand} {vehicle.model}</p>
+                    <p className="text-sm text-gray-500">{vehicle.vehicleId} - {vehicle.connectorType}</p>
+                </div>
+            </div>
+            <Button variant="ghost" size="icon" onClick={onDelete} className="text-red-500 hover:text-red-600">
+                <Trash2 className="h-4 w-4" />
+            </Button>
+        </div>
+    );
+}
+
 
 export function DriverDashboard({ onNavigate, isWalletDialogOpen, onWalletDialogChange }: DriverDashboardProps) {
 
@@ -44,40 +66,39 @@ export function DriverDashboard({ onNavigate, isWalletDialogOpen, onWalletDialog
     const [isLoading, setIsLoading] = useState(true);
     const [walletBalance, setWalletBalance] = useState(0);
 
-    const [completedSession, setCompletedSession] = useState<ChargeSessionDto | null>(null);
-    const [isInvoiceModalOpen, setIsInvoiceModalOpen] = useState(false);
+    const [isAddVehicleModalOpen, setIsAddVehicleModalOpen] = useState(false);
+
+    const loadDashboardData = async () => {
+        console.log("Đang tải dữ liệu dashboard...");
+        try {
+            setIsLoading(true);
+
+            const [profile, allSessions, allStations] = await Promise.all([
+                apiGetDriverProfile(),
+                apiGetAllSessions(),
+                apiGetAllStations()
+            ]);
+
+            setDriverProfile(profile);
+            setWalletBalance(profile.walletBalance);
+            console.log("Tải hồ sơ thành công:", profile);
+
+            const runningSession = allSessions.find(session => session.status === 'ACTIVE');
+            setActiveSession(runningSession || null);
+            console.log("Tải phiên sạc thành công:", runningSession);
+
+            setStations(allStations);
+            console.log("Tải trạm sạc thành công:", allStations);
+
+        } catch (error) {
+            console.error('Không thể tải dữ liệu dashboard:', error);
+            toast.error('Lỗi khi tải dữ liệu. Vui lòng thử đăng nhập lại.');
+        } finally {
+            setIsLoading(false);
+        }
+    };
 
     useEffect(() => {
-        const loadDashboardData = async () => {
-            console.log("Đang tải dữ liệu dashboard...");
-            try {
-                setIsLoading(true);
-
-                const [profile, allSessions, allStations] = await Promise.all([
-                    apiGetDriverProfile(),
-                    apiGetAllSessions(),
-                    apiGetAllStations()
-                ]);
-
-                setDriverProfile(profile);
-                setWalletBalance(profile.walletBalance);
-                console.log("Tải hồ sơ thành công:", profile);
-
-                const runningSession = allSessions.find(session => session.status === 'ACTIVE');
-                setActiveSession(runningSession || null);
-                console.log("Tải phiên sạc thành công:", runningSession);
-
-                setStations(allStations);
-                console.log("Tải trạm sạc thành công:", allStations);
-
-            } catch (error) {
-                console.error('Không thể tải dữ liệu dashboard:', error);
-                toast.error('Lỗi khi tải dữ liệu. Vui lòng thử đăng nhập lại.');
-            } finally {
-                setIsLoading(false);
-            }
-        };
-
         loadDashboardData();
     }, []);
 
@@ -131,25 +152,20 @@ export function DriverDashboard({ onNavigate, isWalletDialogOpen, onWalletDialog
         }
     };
 
-    const handleStopCharging = async (finalEnergy: number) => {
+    const handleStopCharging = async () => {
         if (!activeSession) return;
-        const roundedEnergyUsed = Math.round(finalEnergy * 100) / 100;
 
         const stopData: StopSessionData = {
-            energyUsed: roundedEnergyUsed
+            energyUsed: 10.5
         };
 
         try {
             const stoppedSession = await apiStopSession(activeSession.sessionId, stopData);
 
             setActiveSession(null);
-
-            setWalletBalance(prevBalance => prevBalance - stoppedSession.cost);
-
-            setCompletedSession(stoppedSession);
-            setIsInvoiceModalOpen(true);
-
             toast.success('Đã dừng phiên sạc.');
+
+            setWalletBalance(prev => prev - stoppedSession.cost);
 
         } catch (error: any) {
             console.error('Failed to stop session:', error);
@@ -161,10 +177,27 @@ export function DriverDashboard({ onNavigate, isWalletDialogOpen, onWalletDialog
         }
     };
 
-    const handleInvoiceModalClose = () => {
-        setIsInvoiceModalOpen(false);
-        setCompletedSession(null);
+    const handleVehicleChange = async () => {
+        try {
+            const profile = await apiGetDriverProfile();
+            setDriverProfile(profile);
+        } catch (error) {
+            toast.error("Không thể cập nhật danh sách xe.");
+        }
     };
+
+    const handleDeleteVehicle = async (vehicleId: number) => {
+        if (window.confirm("Bạn có chắc chắn muốn xóa xe này?")) {
+            try {
+                await apiDeleteVehicle(vehicleId);
+                toast.success("Đã xóa xe thành công.");
+                handleVehicleChange();
+            } catch (error) {
+                toast.error("Không thể xóa xe.");
+            }
+        }
+    };
+
 
     if (isLoading) {
         return (
@@ -208,9 +241,10 @@ export function DriverDashboard({ onNavigate, isWalletDialogOpen, onWalletDialog
                                     onClick={handleStartCharging}
                                     className="bg-green-600 hover:bg-green-700 text-white"
                                 >
-                                    <Zap className="mr-2 h-4 w-4" /> Bắt đầu Sạc
+                                    <Zap className="mr-2 h-4 w-4" /> Bắt đầu Sạc (Test)
                                 </Button>
                                 <p className="text-sm text-gray-500">
+                                    (Giả lập sạc tại Cổng 1, Xe đầu tiên)
                                 </p>
                             </div>
                         </Card>
@@ -247,16 +281,43 @@ export function DriverDashboard({ onNavigate, isWalletDialogOpen, onWalletDialog
                         isOpen={isWalletDialogOpen}
                         onOpenChange={onWalletDialogChange}
                     />
+
+                    <Card className="p-6 rounded-2xl">
+                        <div className="flex items-center justify-between mb-4">
+                            <h3 className="text-lg font-medium">Phương tiện của tôi</h3>
+                            <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => setIsAddVehicleModalOpen(true)} // Mở modal
+                            >
+                                <Plus className="h-4 w-4 mr-2" /> Thêm Xe
+                            </Button>
+                        </div>
+                        <div className="space-y-3">
+                            {driverProfile.vehicles.length === 0 ? (
+                                <p className="text-sm text-gray-500 text-center py-4">
+                                    Bạn chưa thêm phương tiện nào.
+                                </p>
+                            ) : (
+                                driverProfile.vehicles.map(vehicle => (
+                                    <VehicleCard
+                                        key={vehicle.id}
+                                        vehicle={vehicle}
+                                        onDelete={() => handleDeleteVehicle(vehicle.id)}
+                                    />
+                                ))
+                            )}
+                        </div>
+                    </Card>
+
                 </div>
             </div>
 
-            {completedSession && (
-                <InvoiceModal
-                    isOpen={isInvoiceModalOpen}
-                    onClose={handleInvoiceModalClose}
-                    session={completedSession}
-                />
-            )}
+            <AddVehicleModal
+                isOpen={isAddVehicleModalOpen}
+                onClose={() => setIsAddVehicleModalOpen(false)}
+                onSuccess={handleVehicleChange}
+            />
         </div>
     );
 }
