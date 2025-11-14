@@ -1,7 +1,3 @@
-/**
- * Landing Page
- * Main landing page with overview, features, and CTA
- */
 
 import { Zap, MapPin, Wallet, BarChart3, Shield, Clock } from 'lucide-react';
 import { Button } from '../components/ui/button';

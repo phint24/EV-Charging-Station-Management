@@ -26,6 +26,7 @@ public class ChargeSessionService {
     private final VehicleRepository vehicleRepository;
     private final ChargingPointRepository chargingPointRepository;
     private final ChargingStationRepository stationRepository;
+    private final InvoiceService invoiceService;
 
     @Transactional(readOnly = true)
     public List<ChargeSessionDto> getAll() {
@@ -108,6 +109,12 @@ public class ChargeSessionService {
 
         ChargeSession savedSession = repository.save(session);
 
+        try {
+            invoiceService.generateInvoiceForSession(savedSession);
+        } catch (Exception e) {
+            System.err.println("Lỗi khi tự động tạo hóa đơn cho phiên sạc " + savedSession.getSessionId() + ": " + e.getMessage());
+        }
+
         return mapToDto(savedSession);
     }
 
@@ -120,7 +127,7 @@ public class ChargeSessionService {
     }
 
     private double calculateCost(ChargeSession session) {
-        return session.getEnergyUsed() * 1.0;
+        return session.getEnergyUsed() * 1000.0;
     }
 
     private ChargeSessionDto mapToDto(ChargeSession session) {
