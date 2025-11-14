@@ -45,7 +45,7 @@ export function AdminDashboard({ onNavigate }: AdminDashboardProps) {
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [editingStation, setEditingStation] = useState<Station | null>(null);
   const [newStatus, setNewStatus] = useState<'active' | 'maintenance' | 'offline'>('active');
-
+  const [users, setUsers] = useState<UserDto[]>([]);
 
   const mapFrontendToBackendStatus = (status: 'active' | 'maintenance' | 'offline'): 'AVAILABLE' | 'IN_USE' | 'OFFLINE' => {
   return status === 'active'
@@ -85,6 +85,18 @@ useEffect(() => {
   };
     fetchStations();
   }, []);
+
+    useEffect(() => {
+        const fetchUsers = async () => {
+            try {
+                const data = await apiGetAllUsers();
+                setUsers(data);
+            } catch (err) {
+                console.error('Failed to fetch users', err);
+            }
+        };
+        fetchUsers();
+    }, []);
 
   const handleSaveStatus = async () => {
   if (!editingStation) return;
@@ -166,13 +178,6 @@ useEffect(() => {
     },
   ];
 
-  // Mock recent users
-  const recentUsers = [
-    { id: 'u-001', name: 'Nguyen Van A', email: 'nguyenvana@email.com', role: 'driver', status: 'active', joined: '2025-10-20' },
-    { id: 'u-002', name: 'Tran Thi B', email: 'tranthib@email.com', role: 'driver', status: 'active', joined: '2025-10-21' },
-    { id: 'u-003', name: 'Le Van C', email: 'levanc@email.com', role: 'staff', status: 'active', joined: '2025-10-22' },
-    { id: 'u-004', name: 'Pham Thi D', email: 'phamthid@email.com', role: 'driver', status: 'inactive', joined: '2025-10-23' },
-  ];
   // Mock alerts
   const alerts = [
     { id: 'a-001', type: 'warning', message: 'Station "Tech Park" offline for 2 hours', time: '15 min ago' },
