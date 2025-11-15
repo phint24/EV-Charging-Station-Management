@@ -51,7 +51,6 @@ public class PaymentMethodService {
     public PaymentMethodDto createPaymentMethod(CreatePaymentMethodRequest request, User currentUser) {
         EVDriver driver = findDriverProfileByUser(currentUser);
 
-        // (Kiểm tra bảo mật: Đảm bảo driverId trong request khớp với driverId của token)
         if (request.driverId() != null && !request.driverId().equals(driver.getId())) {
             throw new AccessDeniedException("Bạn chỉ có thể thêm phương thức thanh toán cho chính mình.");
         }

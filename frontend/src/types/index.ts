@@ -1,6 +1,7 @@
 export type ConnectorType = 'CCS' | 'CHADEMO' | 'AC_TYPE_2' | 'AC_TYPE_1';
 export type SessionStatus = 'PENDING' | 'ACTIVE' | 'COMPLETED' | 'FAILED';
 export type ChargingPointStatus = 'AVAILABLE' | 'CHARGING' | 'RESERVED' | 'OFFLINE' | 'FAULTED';
+export type PaymentType = 'CREDIT_CARD' | 'E_WALLET' | 'BANK_TRANSFER' | 'CASH';
 
 export interface AuthResponse {
     token: string;
@@ -67,7 +68,7 @@ export interface ChargingStationDto {
   stationId: number;
   name: string;
   location: string;
-  status: 'AVAILABLE' | 'IN_USE' | 'OFFLINE' | 'FAULTED'; // thêm FAULTED
+  status: 'AVAILABLE' | 'IN_USE' | 'OFFLINE' | 'FAULTED';
   totalChargingPoint: number;
   availableChargers: number;
 }
@@ -125,4 +126,34 @@ export interface ChargingPoint {
   name: string;
   status: 'active' | 'maintenance' | 'offline';
   stationId: number;
+}
+
+export interface PaymentMethodDto {
+    id: number;
+    type: PaymentType;
+    provider: string;
+    isDefault: boolean;
+}
+
+export interface CreatePaymentMethodRequest {
+    driverId: number;
+    type: PaymentType;
+    provider: string;
+    isDefault: boolean;
+}
+
+export interface BookingDto {
+    id: number;
+    driverId: number;
+    chargingPointId: number;
+    stationName: string;
+    startTime: string;
+    endTime: string;
+    status: 'PENDING' | 'CONFIRMED' | 'COMPLETED' | 'CANCELLED';
+}
+
+export interface CreateBookingRequest {
+    chargingPointId: number;
+    startTime: string;
+    endTime: string;
 }

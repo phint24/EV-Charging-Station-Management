@@ -3,11 +3,8 @@ package project.code.controllers;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-// (1) XÓA IMPORT MODEL
-// import project.code.model.ChargeSession;
 import project.code.services.ChargeSessionService;
 
-// (2) IMPORT CÁC DTO CẦN THIẾT
 import project.code.dto.session.ChargeSessionDto;
 import project.code.dto.session.CreateChargeSessionRequest;
 import project.code.dto.session.StopChargeSessionRequest;
