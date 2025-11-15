@@ -383,6 +383,18 @@ export function AdminDashboard({ onNavigate }: AdminDashboardProps) {
                                             </Badge>
                                         </TableCell>
                                         <TableCell>
+                                        <div className="flex gap-2">
+                                            <Button
+                                                size="sm"
+                                                variant="ghost"
+                                                onClick={() => handleAddChargingPoint(station.id, station.name)}
+                                            >
+                                                <Zap className="mr-1 h-4 w-4" />
+                                                Thêm điểm sạc
+                                            </Button>
+                                        </div>
+                                        </TableCell>
+                                        <TableCell>
                                             <Button
                                                 size="sm"
                                                 variant="ghost"
@@ -459,7 +471,7 @@ export function AdminDashboard({ onNavigate }: AdminDashboardProps) {
                 )}
             </div>
 
-            <Card className="p-6 rounded-2xl">
+            {/* <Card className="p-6 rounded-2xl">
                 <div className="flex items-center justify-between mb-4">
                     <h2>Recent Stations</h2>
                     <Button variant="outline" onClick={() => onNavigate('/admin/stations')}>
@@ -507,7 +519,7 @@ export function AdminDashboard({ onNavigate }: AdminDashboardProps) {
                         </TableBody>
                     </Table>
                 </div>
-            </Card>
+            </Card> */}
 
             <Card className="p-6 rounded-2xl">
                 <div className="flex items-center justify-between mb-4">
