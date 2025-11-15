@@ -97,7 +97,7 @@ export function AddStationModal({ isOpen, onClose, onSuccess }: AddStationModalP
             const requestBody: CreateStationRequest = {
                 name: formData.name.trim(),
                 location: formData.location.trim(),
-                status: formData.status,
+                status: formData.status as 'AVAILABLE' | 'IN_USE' | 'OFFLINE',
                 totalChargingPoint: parseInt(formData.totalChargingPoint),
                 availableChargers: parseInt(formData.availableChargers)
             };

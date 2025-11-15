@@ -12,7 +12,5 @@ public record CreatePaymentMethodRequest(
         PaymentType type,
         @NotBlank(message = "Nhà cung cấp không được để trống")
         String provider,
-        @NotBlank(message = "ID phương thức không được để trống")
-        Long methodId,
         boolean isDefault
 ) {}

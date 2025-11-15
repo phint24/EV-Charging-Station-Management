@@ -22,6 +22,8 @@ import { AddStationModal } from '../../components/station/AddStationModal';
 import { apiGetAllStations, apiUpdateStation, UpdateStationRequest } from '../../services/StationAPI';
 import { ChargingStationDto } from '../../types';
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "../../components/ui/select";
+import { AddChargingPointModal } from '../../components/station/AddChargingPointModal';
+import { apiGetAllChargingPoints, apiUpdateChargingPoint} from '../../services/StationAPI';
 
 interface AdminDashboardProps {
   onNavigate: (path: string) => void;
@@ -50,13 +52,15 @@ export function AdminDashboard({ onNavigate }: AdminDashboardProps) {
       fetchUsers();
     }, []);
   const [isAddStationModalOpen, setIsAddStationModalOpen] = useState(false); 
+  const [isAddChargingPointModalOpen, setIsAddChargingPointModalOpen] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedStation, setSelectedStation] = useState<Station | null>(null);
+  const [selectedStationId, setSelectedStationId] = useState<number | undefined>(); // Thêm dòng này 
   const [stations, setStations] = useState<Station[]>([]);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [editingStation, setEditingStation] = useState<Station | null>(null);
   const [newStatus, setNewStatus] = useState<'active' | 'maintenance' | 'offline'>('active');
-
+  const [users, setUsers] = useState<UserDto[]>([]);
 
   const mapFrontendToBackendStatus = (status: 'active' | 'maintenance' | 'offline'): 'AVAILABLE' | 'IN_USE' | 'OFFLINE' => {
   return status === 'active'
@@ -109,6 +113,17 @@ useEffect(() => {
     };
 
     fetchSessions();
+      }, []);
+  useEffect(() => {
+    const fetchUsers = async () => {
+      try {
+        const data = await apiGetAllUsers();
+        setUsers(data);
+      } catch (err) {
+        console.error('Failed to fetch users', err);
+      }
+    };
+    fetchUsers();
   }, []);
 
   const handleSaveStatus = async () => {
@@ -191,13 +206,6 @@ useEffect(() => {
     },
   ];
 
-  // Mock recent users
-  const recentUsers = [
-    { id: 'u-001', name: 'Nguyen Van A', email: 'nguyenvana@email.com', role: 'driver', status: 'active', joined: '2025-10-20' },
-    { id: 'u-002', name: 'Tran Thi B', email: 'tranthib@email.com', role: 'driver', status: 'active', joined: '2025-10-21' },
-    { id: 'u-003', name: 'Le Van C', email: 'levanc@email.com', role: 'staff', status: 'active', joined: '2025-10-22' },
-    { id: 'u-004', name: 'Pham Thi D', email: 'phamthid@email.com', role: 'driver', status: 'inactive', joined: '2025-10-23' },
-  ];
   // Mock alerts
   const alerts = [
     { id: 'a-001', type: 'warning', message: 'Station "Tech Park" offline for 2 hours', time: '15 min ago' },
@@ -228,6 +236,17 @@ const handleAddStationSuccess = () => {
     toast.success('Trạm sạc đã được thêm thành công!');
     // TODO: Refresh station list
 };
+
+ const handleAddChargingPoint = (stationId: number, stationName: string) => {
+    setSelectedStationId(stationId);
+    setIsAddChargingPointModalOpen(true);
+    toast.info(`Thêm điểm sạc cho ${stationName}`);
+  };
+
+  const handleAddChargingPointSuccess = () => {
+    toast.success('Điểm sạc đã được thêm thành công!');
+    // TODO: Refresh charging points list
+  };
 
   const handleEditUser = (userId: string) => {
     toast.info(`Opening user editor for ${userId}`);
@@ -490,6 +509,57 @@ const handleAddStationSuccess = () => {
         )}
       </div>
 
+       {/* Recent Stations - THÊM PHẦN NÀY */}
+      <Card className="p-6 rounded-2xl">
+        <div className="flex items-center justify-between mb-4">
+          <h2>Recent Stations</h2>
+          <Button variant="outline" onClick={() => onNavigate('/admin/stations')}>
+            View All
+          </Button>
+        </div>
+        <div className="rounded-2xl border overflow-hidden">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Tên trạm</TableHead>
+                <TableHead>Vị trí</TableHead>
+                <TableHead>Trạng thái</TableHead>
+                <TableHead>Cổng sạc</TableHead>
+                <TableHead>Thao tác</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {recentStations.map((station) => (
+                <TableRow key={station.id}>
+                  <TableCell className="font-medium">{station.name}</TableCell>
+                  <TableCell>{station.location}</TableCell>
+                  <TableCell>
+                    <Badge className={station.status === 'active' ? 'bg-green-500' : 'bg-gray-500'}>
+                      {station.status === 'active' ? 'Hoạt động' : 'Offline'}
+                    </Badge>
+                  </TableCell>
+                  <TableCell>
+                    {station.availablePorts}/{station.totalPorts}
+                  </TableCell>
+                  <TableCell>
+                    <div className="flex gap-2">
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => handleAddChargingPoint(station.id, station.name)}
+                      >
+                        <Zap className="mr-1 h-4 w-4" />
+                        Thêm điểm sạc
+                      </Button>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </div>
+      </Card>
+
       {/* Recent Users */}
       <Card className="p-6 rounded-2xl">
         <div className="flex items-center justify-between mb-4">
@@ -539,6 +609,12 @@ const handleAddStationSuccess = () => {
         isOpen={isAddStationModalOpen}
         onClose={handleCloseModal}
         onSuccess={handleAddStationSuccess}
+      />
+      <AddChargingPointModal
+        isOpen={isAddChargingPointModalOpen}
+        onClose={() => setIsAddChargingPointModalOpen(false)}
+        onSuccess={handleAddChargingPointSuccess}
+        preSelectedStationId={selectedStationId}
       />
     </div>
   );

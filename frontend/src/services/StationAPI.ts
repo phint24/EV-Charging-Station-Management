@@ -8,7 +8,7 @@ import {
 export interface CreateStationRequest {
     name: string;
     location: string;
-    status: 'ACTIVE' | 'INACTIVE' | 'MAINTENANCE';
+    status: 'AVAILABLE' | 'IN_USE' | 'OFFLINE';
     totalChargingPoint: number;
     availableChargers: number;
 }
@@ -27,6 +27,22 @@ export interface UpdateStationRequest {
   status: 'AVAILABLE' | 'IN_USE' | 'OFFLINE'; // phải match backend enum
   totalChargingPoint: number;
   availableChargers: number;
+}
+
+export type ConnectorType = 'AC_TYPE_1' | 'AC_TYPE_2' | 'CCS' | 'CHADEMO';
+export type ChargingPointStatus = 'AVAILABLE' | 'CHARGING' | 'UNAVAILABLE' | 'OFFLINE';
+
+export interface CreateChargingPointRequest {
+    stationId: number;
+    type: 'CCS' | 'CHADEMO' | 'AC_TYPE_2' | 'AC_TYPE_1';
+    power: number;
+    status: 'AVAILABLE' | 'CHARGING' | 'RESERVED' | 'OFFLINE' | 'FAULTED';
+}
+
+export interface UpdateChargingPointRequest {
+    type?: 'CCS' | 'CHADEMO' | 'AC_TYPE_2' | 'AC_TYPE_1';
+    power?: number;
+    status?: 'AVAILABLE' | 'CHARGING' | 'RESERVED' | 'OFFLINE' | 'FAULTED';
 }
 
 export const apiGetAllStations = async (): Promise<ChargingStationDto[]> => {
@@ -64,4 +80,28 @@ export const apiUpdateStation = async (id: number, data: UpdateStationRequest): 
 // Delete station
 export const apiDeleteStation = async (id: number): Promise<void> => {
     await API.delete(`/charging-stations/${id}`);
+};
+
+export const apiGetAllChargingPoints = async (): Promise<ChargingPointDto[]> => {
+    const res = await API.get('/charging-points');
+    return res.data;
+};
+
+export const apiGetChargingPointById = async (id: number): Promise<ChargingPointDto> => {
+    const res = await API.get(`/charging-points/${id}`);
+    return res.data;
+};
+
+export const apiCreateChargingPoint = async (data: CreateChargingPointRequest): Promise<ChargingPointDto> => {
+    const res = await API.post('/charging-points', data);
+    return res.data;
+};
+
+export const apiUpdateChargingPoint = async (id: number, data: UpdateChargingPointRequest): Promise<ChargingPointDto> => {
+    const res = await API.put(`/charging-points/${id}`, data);
+    return res.data;
+};
+
+export const apiDeleteChargingPoint = async (id: number): Promise<void> => {
+    await API.delete(`/charging-points/${id}`);
 };

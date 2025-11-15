@@ -15,6 +15,7 @@ import {
 import { apiGetDriverProfile } from '../../services/DriverAPI';
 import { apiStartSession } from '../../services/ChargeSessionAPI';
 
+import { BookingModal } from '../../components/booking/BookingModal';
 import {
     ChargingStationDto,
     ChargingPointDto,
@@ -36,6 +37,9 @@ export function StationDetail({ stationId, onNavigate }: StationDetailProps) {
     const [selectedPointId, setSelectedPointId] = useState<number | null>(null);
     const [selectedVehicleId, setSelectedVehicleId] = useState<number | null>(null);
     const [isStartingSession, setIsStartingSession] = useState(false);
+
+    // (2) Thêm state cho Modal Đặt chỗ
+    const [isBookingModalOpen, setIsBookingModalOpen] = useState(false);
 
     useEffect(() => {
         const loadData = async () => {
@@ -176,7 +180,7 @@ export function StationDetail({ stationId, onNavigate }: StationDetailProps) {
                     </Card>
 
                     <Card className="p-6 rounded-2xl">
-                        <h2 className="text-xl font-semibold mb-4">Bắt đầu Sạc</h2>
+                        <h2 className="text-xl font-semibold mb-4">Hành động</h2>
                         <div className="grid md:grid-cols-2 gap-6">
                             <div>
                                 <label className="text-sm font-medium">1. Chọn xe của bạn</label>
@@ -229,27 +233,33 @@ export function StationDetail({ stationId, onNavigate }: StationDetailProps) {
                             </div>
                         </div>
 
-                        <Button
-                            onClick={handleStartCharging}
-                            disabled={isStartingSession || !selectedPointId || !selectedVehicleId}
-                            className="w-full mt-6 bg-green-600 hover:bg-green-700 text-white"
-                            size="lg"
-                        >
-                            {isStartingSession ? "Đang kết nối..." : "Bắt Đầu Sạc Ngay"}
-                        </Button>
+                        <div className="flex flex-col md:flex-row gap-4 w-full mt-6">
+                            <Button
+                                onClick={handleStartCharging}
+                                disabled={isStartingSession || !selectedPointId || !selectedVehicleId}
+                                className="flex-1 bg-green-600 hover:bg-green-700 text-white"
+                                size="lg"
+                            >
+                                <Zap className="mr-2 h-4 w-4" />
+                                {isStartingSession ? "Đang kết nối..." : "Bắt Đầu Sạc Ngay"}
+                            </Button>
+
+                            <Button
+                                variant="outline"
+                                onClick={() => setIsBookingModalOpen(true)}
+                                disabled={!selectedPointId}
+                                className="flex-1"
+                                size="lg"
+                            >
+                                <Clock className="mr-2 h-4 w-4" />
+                                Đặt chỗ (Book)
+                            </Button>
+                        </div>
                     </Card>
                 </div>
 
+                {/* Phần Sidebar */}
                 <div className="space-y-6">
-                    <Card className="p-6 rounded-2xl bg-gradient-to-br from-[#0f766e] to-[#0ea5a4] text-white">
-                        <div className="flex items-center gap-2 mb-4">
-                            <DollarSign className="h-5 w-5" />
-                            <h3 className="text-white">Pricing (Demo)</h3>
-                        </div>
-                        <p className="text-3xl mb-2">4,500 ₫</p>
-                        <p className="text-sm text-white/80 mb-4">per kWh</p>
-                    </Card>
-
                     <Card className="p-6 rounded-2xl">
                         <div className="flex items-center gap-2 mb-4">
                             <Clock className="h-5 w-5 text-[#0f766e]" />
@@ -257,7 +267,6 @@ export function StationDetail({ stationId, onNavigate }: StationDetailProps) {
                         </div>
                         <p className="text-gray-600">24/7</p>
                     </Card>
-
                     <Card className="p-6 rounded-2xl">
                         <div className="flex items-center gap-2 mb-4">
                             <Phone className="h-5 w-5 text-[#0f766e]" />
@@ -265,7 +274,6 @@ export function StationDetail({ stationId, onNavigate }: StationDetailProps) {
                         </div>
                         <p className="text-gray-600">Hotline: 1800-8888</p>
                     </Card>
-
                     <Button
                         variant="outline"
                         className="w-full"
@@ -276,6 +284,19 @@ export function StationDetail({ stationId, onNavigate }: StationDetailProps) {
                     </Button>
                 </div>
             </div>
+
+            {station && selectedPointId && (
+                <BookingModal
+                    isOpen={isBookingModalOpen}
+                    onClose={() => setIsBookingModalOpen(false)}
+                    pointId={selectedPointId}
+                    stationName={station.name}
+                    onSuccess={() => {
+                        toast.success("Đặt chỗ thành công!");
+                        onNavigate('/driver/dashboard');
+                    }}
+                />
+            )}
         </div>
     );
 }

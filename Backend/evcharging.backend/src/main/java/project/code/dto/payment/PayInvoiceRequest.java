@@ -1,4 +1,4 @@
-package project.code.dto;
+package project.code.dto.payment;
 
 import jakarta.validation.constraints.NotBlank;
 

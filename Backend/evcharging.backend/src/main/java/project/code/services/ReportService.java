@@ -3,21 +3,20 @@ package project.code.services;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import project.code.model.ChargeSession;
-import project.code.model.ChargingStation;
-import project.code.model.Report;
+import project.code.model.*;
 import project.code.model.enums.ReportType;
 import project.code.model.enums.SessionStatus;
 import project.code.repository.ChargeSessionRepository;
 import project.code.repository.ChargingStationRepository;
 import project.code.repository.ReportRepository;
 
-// (1) Import DTO
-import project.code.dto.GenerateReportRequest;
+import project.code.dto.report.GenerateReportRequest;
+import project.code.dto.report.ReportDto;
 
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -27,16 +26,23 @@ public class ReportService {
     private final ChargingStationRepository stationRepository;
     private final ChargeSessionRepository chargeSessionRepository;
 
-    public List<Report> getAllReports() {
-        return reportRepository.findAll();
+    @Transactional(readOnly = true)
+    public List<ReportDto> getAllReports() {
+        return reportRepository.findAll().stream()
+                .map(this::mapToDto)
+                .collect(Collectors.toList());
     }
 
-    public Optional<Report> getReportById(Long reportId) {
-        return reportRepository.findById(reportId);
+    @Transactional(readOnly = true)
+    public Optional<ReportDto> getReportById(Long reportId) {
+        return reportRepository.findById(reportId)
+                .map(this::mapToDto);
     }
 
-    public Report createReport(Report report) {
-        return reportRepository.save(report);
+    @Transactional
+    public ReportDto createReport(Report report) {
+        Report savedReport = reportRepository.save(report);
+        return mapToDto(savedReport);
     }
 
     public boolean deleteReport(Long reportId) {
@@ -47,28 +53,40 @@ public class ReportService {
         return false;
     }
 
-    public List<Report> getReportsByStationId(Long stationId) {
+    @Transactional(readOnly = true)
+    public List<ReportDto> getReportsByStationId(Long stationId) {
         ChargingStation station = stationRepository.findById(stationId)
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy Trạm ID: " + stationId));
-        return reportRepository.findByStation(station);
+        return reportRepository.findByStation(station).stream()
+                .map(this::mapToDto)
+                .collect(Collectors.toList());
     }
 
-    public List<Report> getReportsByType(ReportType reportType) {
-        return reportRepository.findByReportType(reportType);
+    @Transactional(readOnly = true)
+    public List<ReportDto> getReportsByType(ReportType reportType) {
+        return reportRepository.findByReportType(reportType).stream()
+                .map(this::mapToDto)
+                .collect(Collectors.toList());
     }
 
-    public List<Report> getReportsByPeriod(LocalDateTime start, LocalDateTime end) {
-        return reportRepository.findByPeriodStartBetween(start, end);
+    @Transactional(readOnly = true)
+    public List<ReportDto> getReportsByPeriod(LocalDateTime start, LocalDateTime end) {
+        return reportRepository.findByPeriodStartBetween(start, end).stream()
+                .map(this::mapToDto)
+                .collect(Collectors.toList());
     }
 
-    public List<Report> getReportsByStationAndPeriod(Long stationId, LocalDateTime start, LocalDateTime end) {
+    @Transactional(readOnly = true)
+    public List<ReportDto> getReportsByStationAndPeriod(Long stationId, LocalDateTime start, LocalDateTime end) {
         ChargingStation station = stationRepository.findById(stationId)
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy Trạm ID: " + stationId));
-        return reportRepository.findByStationAndPeriodStartBetween(station, start, end);
+        return reportRepository.findByStationAndPeriodStartBetween(station, start, end).stream()
+                .map(this::mapToDto)
+                .collect(Collectors.toList());
     }
 
     @Transactional
-    public Report generateReport(GenerateReportRequest request, ReportType type) {
+    public ReportDto generateReport(GenerateReportRequest request, ReportType type) {
 
         ChargingStation station = stationRepository.findById(request.stationId())
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy Trạm ID: " + request.stationId()));
@@ -94,22 +112,53 @@ public class ReportService {
                 .totalRevenue(totalRevenue)
                 .build();
 
-        return reportRepository.save(report);
+        Report savedReport = reportRepository.save(report);
+        return mapToDto(savedReport);
     }
 
-    public Optional<Report> getTopRevenueReport() {
-        return reportRepository.findTopByOrderByTotalRevenueDesc();
+    @Transactional(readOnly = true)
+    public Optional<ReportDto> getTopRevenueReport() {
+        return reportRepository.findTopByOrderByTotalRevenueDesc()
+                .map(this::mapToDto);
     }
-    public Optional<Report> getTopEnergyReport() {
-        return reportRepository.findTopByOrderByTotalEnergyDesc();
+
+    @Transactional(readOnly = true)
+    public Optional<ReportDto> getTopEnergyReport() {
+        return reportRepository.findTopByOrderByTotalEnergyDesc()
+                .map(this::mapToDto);
     }
-    public List<Report> getAllReportsSortedByDate() {
-        return reportRepository.findAllByOrderByPeriodStartDesc();
+
+    @Transactional(readOnly = true)
+    public List<ReportDto> getAllReportsSortedByDate() {
+        return reportRepository.findAllByOrderByPeriodStartDesc().stream()
+                .map(this::mapToDto)
+                .collect(Collectors.toList());
     }
-    public List<Report> getReportsByMinSessions(int minSessions) {
-        return reportRepository.findByTotalSessionsGreaterThanEqual(minSessions);
+
+    @Transactional(readOnly = true)
+    public List<ReportDto> getReportsByMinSessions(int minSessions) {
+        return reportRepository.findByTotalSessionsGreaterThanEqual(minSessions).stream()
+                .map(this::mapToDto)
+                .collect(Collectors.toList());
     }
-    public List<Report> getReportsByRevenueRange(double minRevenue, double maxRevenue) {
-        return reportRepository.findByTotalRevenueBetween(minRevenue, maxRevenue);
+
+    @Transactional(readOnly = true)
+    public List<ReportDto> getReportsByRevenueRange(double minRevenue, double maxRevenue) {
+        return reportRepository.findByTotalRevenueBetween(minRevenue, maxRevenue).stream()
+                .map(this::mapToDto)
+                .collect(Collectors.toList());
+    }
+
+    private ReportDto mapToDto(Report report) {
+        return new ReportDto(
+                report.getReportId(),
+                report.getReportType(),
+                report.getStation().getStationId(),
+                report.getPeriodStart(),
+                report.getPeriodEnd(),
+                report.getTotalSessions(),
+                report.getTotalEnergy(),
+                report.getTotalRevenue()
+        );
     }
 }
