@@ -11,11 +11,13 @@ import {
     TableHeader,
     TableRow,
 } from '../../components/ui/table';
-import { Zap, MapPin, Users, DollarSign, Search, Check, CalendarClock } from 'lucide-react';
+import { Zap, MapPin, Users, DollarSign, Search, Check, CalendarClock, StopCircle, AlertCircle } from 'lucide-react';
 import { toast } from 'sonner';
 import "../../styles/globals.css";
 import { apiGetBookingsForStation, apiUpdateBookingStatus } from '../../services/CSStaffAPI';
 import { BookingDto, BookingStatus } from '../../types';
+import { apiGetAllSessions, apiStopSession, apiStartSession, apiGetActiveSessions , apiResumeSession} from '../../services/sessionAPI';
+import { ChargeSessionDto } from '../../types';
 
 interface StaffDashboardProps {
     onNavigate: (path: string) => void;
@@ -23,7 +25,8 @@ interface StaffDashboardProps {
 
 export function StaffDashboard({ onNavigate }: StaffDashboardProps) {
     const [searchTerm, setSearchTerm] = useState('');
-
+    const [activeSessions, setActiveSessions] = useState<ChargeSessionDto[]>([]);
+    const [loading, setLoading] = useState(false);
     const [bookings, setBookings] = useState<BookingDto[]>([]);
     const [isLoading, setIsLoading] = useState(true);
 
@@ -43,6 +46,21 @@ export function StaffDashboard({ onNavigate }: StaffDashboardProps) {
     useEffect(() => {
         fetchBookings();
     }, []);
+      const fetchSessions = async () => {
+    try {
+      setLoading(true);
+      const data = await apiGetActiveSessions();
+      setActiveSessions(data);
+    } catch (err) {
+      console.error(err);
+      toast.error("Không thể tải danh sách phiên sạc");
+    } finally {
+      setLoading(false);
+    }
+  };
+    useEffect(() => {
+    fetchSessions();
+  }, []);
 
     const handleUpdateStatus = async (bookingId: number, newStatus: BookingStatus) => {
         try {
@@ -60,6 +78,47 @@ export function StaffDashboard({ onNavigate }: StaffDashboardProps) {
         { icon: <CalendarClock className="h-5 w-5" />, label: 'Pending Bookings', value: bookings.filter(b => b.status === 'PENDING').length, color: 'text-blue-600', bgColor: 'bg-blue-100', },
         { icon: <DollarSign className="h-5 w-5" />, label: 'Revenue Today', value: '0₫', color: 'text-purple-600', bgColor: 'bg-purple-100', },
     ];
+      const handleTogglePort = (portId: string, enabled: boolean) => {
+        toast.success(`Port ${portId} ${enabled ? 'enabled' : 'disabled'}`);
+        // API: POST /ports/{portId}/toggle
+    };
+      const handleToggleSession = async (session: ChargeSessionDto) => {
+  try {
+    if (session.status === "ACTIVE" || session.status === "CHARGING") {
+      await apiStopSession(session.sessionId, { energyUsed: session.energyUsed || 0 });
+      toast.success("Session stopped");
+    } else {
+      await apiStartSession({
+        driverId: session.driverId,
+        vehicleId: session.vehicleId,
+        chargingPointId: session.chargingPointId,
+      });
+      toast.success("Session started");
+    }
+    // if (session.status === "CHARGING") {
+    //   await apiStopSession(session.sessionId, { energyUsed: session.energyUsed || 0 });
+    //   toast.success("Session stopped");
+    // } else {
+    //   await apiStartSession({
+    //     driverId: session.driverId,
+    //     vehicleId: session.vehicleId,
+    //     chargingPointId: session.chargingPointId,
+    //   });
+    //   toast.success("Session started");
+    // }
+    await fetchSessions(); // cập nhật danh sách sau toggle
+  } catch (err) {
+    console.error(err);
+    toast.error("Failed to toggle session");
+  }
+};
+      const handleReportIncident = (stationId: string) => {
+    toast.info('Incident report form opened');
+    // Open incident report modal
+  };
+    const formatCurrency = (amount: number) => {
+    return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(amount);
+  };
 
     const formatDateTime = (dateTime: string) => {
         return new Date(dateTime).toLocaleString('vi-VN', {
@@ -90,7 +149,65 @@ export function StaffDashboard({ onNavigate }: StaffDashboardProps) {
                     </Card>
                 ))}
             </div>
+                  {/* Active Sessions */}
+                <Card className="p-6 rounded-2xl">
+                    <div className="flex items-center justify-between mb-4">
+                    <h2>Active Charging Sessions</h2>
+                    <Badge>{activeSessions.length} active</Badge>
+                    </div>
 
+                    <div className="rounded-2xl border overflow-hidden">
+                    <Table>
+                        <TableHeader>
+                        <TableRow>
+                            <TableHead>Customer</TableHead>
+                            <TableHead>Station</TableHead>
+                            <TableHead>Port</TableHead>
+                            <TableHead>Start Time</TableHead>
+                            <TableHead>SOC</TableHead>
+                            <TableHead>Energy</TableHead>
+                            <TableHead>Cost</TableHead>
+                            <TableHead>Actions</TableHead>
+                        </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                        {activeSessions.map((s) => (
+                            <TableRow key={s.sessionId}>
+                            <TableCell>{s.driverId}</TableCell>
+                            <TableCell>{s.stationId}</TableCell>
+                            <TableCell>{s.chargingPointId}</TableCell>
+                            <TableCell>{new Date(s.startTime).toLocaleTimeString()}</TableCell>
+                            <TableCell>
+                                {s.status === "ACTIVE" ? (
+                                <Badge className="bg-green-600">Charging</Badge>
+                                ) : (
+                                <Badge className="bg-gray-600">Complete</Badge>
+                                )}
+                                {/* {s.status === "CHARGING" ? (
+                                <Badge className="bg-green-600">Charging</Badge>
+                                ) : (
+                                <Badge className="bg-gray-600">Stopped</Badge>
+                                )} */}
+                            </TableCell>
+                            <TableCell>{s.energyUsed} kWh</TableCell>
+                            <TableCell>{formatCurrency(s.cost)}</TableCell>
+                            <TableCell>
+                                {s.status === "ACTIVE" || s.status === "CHARGING" ? (
+                                <Button
+                                    size="sm"
+                                    variant="destructive"
+                                    onClick={() => handleToggleSession(s)}
+                                >
+                                    Stop
+                                </Button>
+                                ) : null}
+                            </TableCell>
+                            </TableRow>
+                        ))}
+                        </TableBody>
+                    </Table>
+                    </div>
+                </Card>
             <Card className="p-6 rounded-2xl">
                 <div className="flex items-center justify-between mb-4">
                     <h2>Bookings Management (Tại trạm của bạn)</h2>
