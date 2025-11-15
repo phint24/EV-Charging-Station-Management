@@ -51,7 +51,6 @@ export function AdminDashboard({ onNavigate }: AdminDashboardProps) {
   const [newStatus, setNewStatus] = useState<'active' | 'maintenance' | 'offline'>('active');
   const [users, setUsers] = useState<UserDto[]>([]);
 
-
   const mapFrontendToBackendStatus = (status: 'active' | 'maintenance' | 'offline'): 'AVAILABLE' | 'IN_USE' | 'OFFLINE' => {
   return status === 'active'
     ? 'AVAILABLE'
@@ -183,20 +182,6 @@ useEffect(() => {
     },
   ];
 
-  // Mock recent stations (thêm stationId)
-  const recentStations = [
-    { id: 1, name: 'Trạm sạc Central Plaza', location: 'Quận 1, TP.HCM', status: 'active', totalPorts: 8, availablePorts: 5 },
-    { id: 2, name: 'Trạm sạc Vincom Mega', location: 'Quận 2, TP.HCM', status: 'active', totalPorts: 6, availablePorts: 2 },
-    { id: 3, name: 'Trạm sạc Tech Park', location: 'Quận 9, TP.HCM', status: 'offline', totalPorts: 4, availablePorts: 0 },
-  ];
-
-  // Mock recent users
-  const recentUsers = [
-    { id: 'u-001', name: 'Nguyen Van A', email: 'nguyenvana@email.com', role: 'driver', status: 'active', joined: '2025-10-20' },
-    { id: 'u-002', name: 'Tran Thi B', email: 'tranthib@email.com', role: 'driver', status: 'active', joined: '2025-10-21' },
-    { id: 'u-003', name: 'Le Van C', email: 'levanc@email.com', role: 'staff', status: 'active', joined: '2025-10-22' },
-    { id: 'u-004', name: 'Pham Thi D', email: 'phamthid@email.com', role: 'driver', status: 'inactive', joined: '2025-10-23' },
-  ];
   // Mock alerts
   const alerts = [
     { id: 'a-001', type: 'warning', message: 'Station "Tech Park" offline for 2 hours', time: '15 min ago' },

@@ -1,4 +1,4 @@
-package project.code.dto;
+package project.code.dto.report;
 
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
