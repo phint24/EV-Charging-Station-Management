@@ -1,5 +1,5 @@
 export type ConnectorType = 'CCS' | 'CHADEMO' | 'AC_TYPE_2' | 'AC_TYPE_1';
-export type SessionStatus = 'PENDING' | 'ACTIVE' | 'COMPLETED' | 'FAILED';
+export type SessionStatus = 'PENDING' | 'ACTIVE' | 'COMPLETED' | 'FAILED' | 'CHARGING';
 export type ChargingPointStatus = 'AVAILABLE' | 'CHARGING' | 'RESERVED' | 'OFFLINE' | 'FAULTED';
 export type PaymentType = 'CREDIT_CARD' | 'E_WALLET' | 'BANK_TRANSFER' | 'CASH';
 
