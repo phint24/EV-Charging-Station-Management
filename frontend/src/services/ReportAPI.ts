@@ -25,19 +25,24 @@ ReportAPI.interceptors.request.use(
 export interface Report {
     reportId: number;
     reportType: 'REVENUE' | 'USAGE';
-    startDate: string;
-    endDate: string;
+    periodStart: string;
+    periodEnd: string;
     totalRevenue: number;
     totalEnergy: number;
     totalSessions: number;
-    stationId?: number;
-    generatedAt: string;
+    // stationId?: number;
+    // generatedAt: string;
+    station: { // Thay stationID bằng object station
+        stationId:number;
+        name :string;
+        location :string;
+    }
 }
 
 export interface GenerateReportRequest {
     stationId?: number;
-    startDate: string;
-    endDate: string;
+    periodStart: string;
+    periodEnd: string;
 }
 
 
@@ -85,6 +90,60 @@ export const getReportsByStationAndPeriod = async (
     return response.data;
 };
 
+// Lấy reports theo khoảng thời gian
+// export const getReportsByPeriod = async (start: string, end: string): Promise<Report[]> => {
+//     // Chuyển đổi start và end sang định dạng ISO string without timezone
+//     const startDate = new Date(start);
+//     const endDate = new Date(end);
+
+//     const formatToLocalDateTime = (date: Date) => {
+//         const year = date.getFullYear();
+//         const month = String(date.getMonth() + 1).padStart(2, '0');
+//         const day = String(date.getDate()).padStart(2, '0');
+//         const hours = String(date.getHours()).padStart(2, '0');
+//         const minutes = String(date.getMinutes()).padStart(2, '0');
+//         const seconds = String(date.getSeconds()).padStart(2, '0');
+//         return `${year}-${month}-${day}T${hours}:${minutes}:${seconds}`;
+//     };
+
+//     const params = {
+//         start: formatToLocalDateTime(startDate),
+//         end: formatToLocalDateTime(endDate)
+//     };
+
+//     const response = await ReportAPI.get('/period', { params });
+//     return response.data;
+// };
+
+// Lấy reports theo station và khoảng thời gian
+// export const getReportsByStationAndPeriod = async (
+//     stationId: number,
+//     start: string,
+//     end: string
+// ): Promise<Report[]> => {
+//     // Tương tự, chuyển đổi start và end
+//     const startDate = new Date(start);
+//     const endDate = new Date(end);
+
+//     const formatToLocalDateTime = (date: Date) => {
+//         const year = date.getFullYear();
+//         const month = String(date.getMonth() + 1).padStart(2, '0');
+//         const day = String(date.getDate()).padStart(2, '0');
+//         const hours = String(date.getHours()).padStart(2, '0');
+//         const minutes = String(date.getMinutes()).padStart(2, '0');
+//         const seconds = String(date.getSeconds()).padStart(2, '0');
+//         return `${year}-${month}-${day}T${hours}:${minutes}:${seconds}`;
+//     };
+
+//     const params = {
+//         start: formatToLocalDateTime(startDate),
+//         end: formatToLocalDateTime(endDate)
+//     };
+
+//     const response = await ReportAPI.get(`/station/${stationId}/period`, { params });
+//     return response.data;
+// };
+
 // Lấy report có doanh thu cao nhất
 export const getTopRevenueReport = async (): Promise<Report> => {
     const response = await ReportAPI.get('/top-revenue');
@@ -123,7 +182,9 @@ export const getReportsByRevenueRange = async (
 
 // Tạo revenue report mới
 export const generateRevenueReport = async (data: GenerateReportRequest): Promise<Report> => {
+    console.log('Sending report request:', data);
     const response = await ReportAPI.post('/revenue', data);
+    console.log('Report created successfully:', response.data);
     return response.data;
 };
 
@@ -183,10 +244,30 @@ export const exportRevenueReport = async (): Promise<void> => {
         }
         
         // Convert to JSON string với format đẹp
-        const jsonString = JSON.stringify(data, null, 2);
+        // const jsonString = JSON.stringify(data, null, 2);
+
+                // Tạo nội dung CSV thay vì JSON để dễ đọc
+        const headers = ['ID', 'Loại', 'Trạm sạc', 'Vị trí', 'Bắt đầu', 'Kết thúc', 'Doanh thu', 'Năng lượng', 'Số phiên'];
+        
+        const csvContent = [
+            headers.join(','),
+            ...data.map((report: Report) => [
+                report.reportId,
+                report.reportType,
+                `"${report.station.name}"`,
+                `"${report.station.location}"`,
+                report.periodStart,
+                report.periodEnd,
+                report.totalRevenue,
+                report.totalEnergy,
+                report.totalSessions
+            ].join(','))
+        ].join('\n');
         
         // Create blob
-        const blob = new Blob([jsonString], { type: 'application/json' });
+        // const blob = new Blob([jsonString], { type: 'application/json' });
+        // const url = window.URL.createObjectURL(blob);
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
         const url = window.URL.createObjectURL(blob);
         
         // Create link và download
@@ -217,14 +298,26 @@ export const exportRevenueReport = async (): Promise<void> => {
 // Export report theo station
 export const exportReportByStation = async (stationId: number): Promise<void> => {
     try {
-        const response = await ReportAPI.get(`/station/${stationId}`, {
-            responseType: 'blob',
-        });
+        console.log('Fetching reports for station:', stationId);
+        const response = await ReportAPI.get(`/station/${stationId}`);
+        // responseType: 'blob',
+         const data = response.data;
+        
+        if (!data || data.length === 0) {
+            throw new Error(`Không có báo cáo nào cho trạm ID: ${stationId}`);
+        }
+        
 
-        const blob = new Blob([response.data], { type: 'application/json' });
+        // const blob = new Blob([response.data], { type: 'application/json' });
+        // const url = window.URL.createObjectURL(blob);
+        // const link = document.createElement('a');
+        // link.href = url;
+
+        const jsonString = JSON.stringify(data, null, 2);
+        const blob = new Blob([jsonString], { type: 'application/json' });
         const url = window.URL.createObjectURL(blob);
         const link = document.createElement('a');
-        link.href = url;
+        link.href = url
         
         const timestamp = new Date().toISOString().split('T')[0];
         link.setAttribute('download', `station-${stationId}-report-${timestamp}.json`);
@@ -233,6 +326,7 @@ export const exportReportByStation = async (stationId: number): Promise<void> =>
         link.click();
         link.remove();
         window.URL.revokeObjectURL(url);
+         console.log('Export completed!');
     } catch (error) {
         console.error('Error exporting station report:', error);
         throw error;
@@ -274,16 +368,24 @@ export const formatCurrency = (amount: number): string => {
     }).format(amount);
 };
 
-// Format date theo định dạng dd/mm/yyyy
-export const formatDate = (dateString: string): string => {
-    const date = new Date(dateString);
-    return date.toLocaleDateString('vi-VN');
-};
 
 // Format datetime theo định dạng dd/mm/yyyy HH:mm
 export const formatDateTime = (dateString: string): string => {
     const date = new Date(dateString);
     return date.toLocaleString('vi-VN');
 };
+
+// Thêm response interceptor để debug lỗi
+ReportAPI.interceptors.response.use(
+    (response) => {
+        return response;
+    },
+    (error) => {
+        console.error('API Error:', error.response?.data);
+        console.error('Status:', error.response?.status);
+        console.error('Headers:', error.response?.headers);
+        return Promise.reject(error);
+    }
+);
 
 export default ReportAPI;

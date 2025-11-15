@@ -1,128 +1,279 @@
+// import { useState, useEffect } from 'react';
+// import { Card } from '../../components/ui/card';
+// import { Badge } from '../../components/ui/badge';
+// import { Button } from '../../components/ui/button';
+// import { ArrowLeft, MapPin, Zap } from 'lucide-react';
+// import { toast } from 'sonner';
+// import { apiGetStationById } from '../../services/StationAPI';
+// import { ChargingStationDto } from '../../types';
+// import { StationChargingPoints } from '../../components/station/StationChargingPoints';
+
+// interface StationDetailPageProps {
+//     stationId: number;
+//     onBack: () => void;
+// }
+
+// export function StationDetailPage({ stationId, onBack }: StationDetailPageProps) {
+//     const [station, setStation] = useState<ChargingStationDto | null>(null);
+//     const [isLoading, setIsLoading] = useState(true);
+
+//     useEffect(() => {
+//         loadStation();
+//     }, [stationId]);
+
+//     const loadStation = async () => {
+//         setIsLoading(true);
+//         try {
+//             const data = await apiGetStationById(stationId);
+//             setStation(data);
+//         } catch (error) {
+//             console.error('Error loading station:', error);
+//             toast.error('Không thể tải thông tin trạm sạc');
+//         } finally {
+//             setIsLoading(false);
+//         }
+//     };
+
+//     const getStatusBadge = (status: string) => {
+//         const statusMap: Record<string, { label: string; className: string }> = {
+//             AVAILABLE: { label: 'Sẵn sàng', className: 'bg-green-500' },
+//             IN_USE: { label: 'Đang bận', className: 'bg-blue-500' },
+//             OFFLINE: { label: 'Ngoại tuyến', className: 'bg-gray-500' },
+//             FAULTED: { label: 'Bị lỗi', className: 'bg-red-500' },
+//         };
+        
+//         const info = statusMap[status] || { label: status, className: 'bg-gray-500' };
+//         return <Badge className={info.className}>{info.label}</Badge>;
+//     };
+
+//     if (isLoading) {
+//         return (
+//             <div className="flex items-center justify-center h-64">
+//                 <p className="text-gray-500">Đang tải...</p>
+//             </div>
+//         );
+//     }
+
+//     if (!station) {
+//         return (
+//             <div className="flex flex-col items-center justify-center h-64">
+//                 <p className="text-gray-500 mb-4">Không tìm thấy trạm sạc</p>
+//                 <Button onClick={onBack} variant="outline">
+//                     <ArrowLeft className="mr-2 h-4 w-4" />
+//                     Quay lại
+//                 </Button>
+//             </div>
+//         );
+//     }
+
+//     return (
+//         <div className="space-y-6">
+//             {/* Header */}
+//             <div className="flex items-center justify-between">
+//                 <Button onClick={onBack} variant="outline">
+//                     <ArrowLeft className="mr-2 h-4 w-4" />
+//                     Quay lại
+//                 </Button>
+//             </div>
+
+//             {/* Station Info */}
+//             <Card className="p-6">
+//                 <div className="flex items-start justify-between mb-4">
+//                     <div>
+//                         <h1 className="text-3xl font-bold mb-2">{station.name}</h1>
+//                         <div className="flex items-center gap-2 text-gray-600 mb-2">
+//                             <MapPin className="h-4 w-4" />
+//                             <span>{station.location}</span>
+//                         </div>
+//                     </div>
+//                     {getStatusBadge(station.status)}
+//                 </div>
+
+//                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-6">
+//                     <div className="p-4 bg-blue-50 rounded-lg">
+//                         <div className="flex items-center gap-2 mb-2">
+//                             <Zap className="h-5 w-5 text-blue-600" />
+//                             <p className="text-sm text-gray-600">Tổng số cổng</p>
+//                         </div>
+//                         <p className="text-2xl font-bold">{station.totalChargingPoint}</p>
+//                     </div>
+
+//                     <div className="p-4 bg-green-50 rounded-lg">
+//                         <div className="flex items-center gap-2 mb-2">
+//                             <Zap className="h-5 w-5 text-green-600" />
+//                             <p className="text-sm text-gray-600">Cổng khả dụng</p>
+//                         </div>
+//                         <p className="text-2xl font-bold">{station.availableChargers}</p>
+//                     </div>
+
+//                     <div className="p-4 bg-purple-50 rounded-lg">
+//                         <div className="flex items-center gap-2 mb-2">
+//                             <Zap className="h-5 w-5 text-purple-600" />
+//                             <p className="text-sm text-gray-600">Đang sử dụng</p>
+//                         </div>
+//                         <p className="text-2xl font-bold">
+//                             {station.totalChargingPoint - station.availableChargers}
+//                         </p>
+//                     </div>
+//                 </div>
+//             </Card>
+
+//             {/* Charging Points List */}
+//             <StationChargingPoints 
+//                 stationId={station.stationId} 
+//                 stationName={station.name}
+//             />
+//         </div>
+//     );
+// }
+
 import { useState, useEffect } from 'react';
 import { Card } from '../../components/ui/card';
 import { Badge } from '../../components/ui/badge';
 import { Button } from '../../components/ui/button';
-import { ArrowLeft, MapPin, Zap } from 'lucide-react';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '../../components/ui/table';
+import { Zap } from 'lucide-react';
 import { toast } from 'sonner';
-import { apiGetStationById } from '../../services/StationAPI';
+import { 
+  apiGetAllStations
+} from '../../services/StationAPI';
 import { ChargingStationDto } from '../../types';
-import { StationChargingPoints } from '../../components/station/StationChargingPoints';
+import { AddChargingPointModal } from '../../components/station/AddChargingPointModal';
 
-interface StationDetailPageProps {
-    stationId: number;
-    onBack: () => void;
-}
+export function StationsPage() {
+  const [stations, setStations] = useState<ChargingStationDto[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [isAddChargingPointModalOpen, setIsAddChargingPointModalOpen] = useState(false);
+  const [selectedStationId, setSelectedStationId] = useState<number | undefined>();
 
-export function StationDetailPage({ stationId, onBack }: StationDetailPageProps) {
-    const [station, setStation] = useState<ChargingStationDto | null>(null);
-    const [isLoading, setIsLoading] = useState(true);
+  useEffect(() => {
+    loadStations();
+  }, []);
 
-    useEffect(() => {
-        loadStation();
-    }, [stationId]);
-
-    const loadStation = async () => {
-        setIsLoading(true);
-        try {
-            const data = await apiGetStationById(stationId);
-            setStation(data);
-        } catch (error) {
-            console.error('Error loading station:', error);
-            toast.error('Không thể tải thông tin trạm sạc');
-        } finally {
-            setIsLoading(false);
-        }
-    };
-
-    const getStatusBadge = (status: string) => {
-        const statusMap: Record<string, { label: string; className: string }> = {
-            AVAILABLE: { label: 'Sẵn sàng', className: 'bg-green-500' },
-            IN_USE: { label: 'Đang bận', className: 'bg-blue-500' },
-            OFFLINE: { label: 'Ngoại tuyến', className: 'bg-gray-500' },
-            FAULTED: { label: 'Bị lỗi', className: 'bg-red-500' },
-        };
-        
-        const info = statusMap[status] || { label: status, className: 'bg-gray-500' };
-        return <Badge className={info.className}>{info.label}</Badge>;
-    };
-
-    if (isLoading) {
-        return (
-            <div className="flex items-center justify-center h-64">
-                <p className="text-gray-500">Đang tải...</p>
-            </div>
-        );
+  const loadStations = async () => {
+    setIsLoading(true);
+    try {
+      const data = await apiGetAllStations();
+      setStations(data);
+      console.log('Loaded stations:', data);
+    } catch (error) {
+      console.error('Error loading stations:', error);
+      toast.error('Không thể tải danh sách trạm sạc');
+    } finally {
+      setIsLoading(false);
     }
+  };
 
-    if (!station) {
-        return (
-            <div className="flex flex-col items-center justify-center h-64">
-                <p className="text-gray-500 mb-4">Không tìm thấy trạm sạc</p>
-                <Button onClick={onBack} variant="outline">
-                    <ArrowLeft className="mr-2 h-4 w-4" />
-                    Quay lại
-                </Button>
-            </div>
-        );
-    }
+  const handleAddChargingPoint = (stationId: number) => {
+    setSelectedStationId(stationId);
+    setIsAddChargingPointModalOpen(true);
+  };
 
+  const handleAddChargingPointSuccess = () => {
+    toast.success('Thêm điểm sạc thành công!');
+    loadStations(); // Refresh để cập nhật
+  };
+
+  const getStatusBadge = (status: string) => {
+    const statusMap: Record<string, { label: string; className: string }> = {
+      AVAILABLE: { label: 'active', className: 'bg-green-500 text-white' },
+      IN_USE: { label: 'active', className: 'bg-blue-500 text-white' },
+      OFFLINE: { label: 'offline', className: 'bg-red-500 text-white' },
+      FAULTED: { label: 'active', className: 'bg-yellow-500 text-white' },
+    };
+    
+    const info = statusMap[status] || { label: 'active', className: 'bg-green-500 text-white' };
+    return <Badge className={info.className}>{info.label}</Badge>;
+  };
+
+  if (isLoading) {
     return (
-        <div className="space-y-6">
-            {/* Header */}
-            <div className="flex items-center justify-between">
-                <Button onClick={onBack} variant="outline">
-                    <ArrowLeft className="mr-2 h-4 w-4" />
-                    Quay lại
-                </Button>
-            </div>
-
-            {/* Station Info */}
-            <Card className="p-6">
-                <div className="flex items-start justify-between mb-4">
-                    <div>
-                        <h1 className="text-3xl font-bold mb-2">{station.name}</h1>
-                        <div className="flex items-center gap-2 text-gray-600 mb-2">
-                            <MapPin className="h-4 w-4" />
-                            <span>{station.location}</span>
-                        </div>
-                    </div>
-                    {getStatusBadge(station.status)}
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-6">
-                    <div className="p-4 bg-blue-50 rounded-lg">
-                        <div className="flex items-center gap-2 mb-2">
-                            <Zap className="h-5 w-5 text-blue-600" />
-                            <p className="text-sm text-gray-600">Tổng số cổng</p>
-                        </div>
-                        <p className="text-2xl font-bold">{station.totalChargingPoint}</p>
-                    </div>
-
-                    <div className="p-4 bg-green-50 rounded-lg">
-                        <div className="flex items-center gap-2 mb-2">
-                            <Zap className="h-5 w-5 text-green-600" />
-                            <p className="text-sm text-gray-600">Cổng khả dụng</p>
-                        </div>
-                        <p className="text-2xl font-bold">{station.availableChargers}</p>
-                    </div>
-
-                    <div className="p-4 bg-purple-50 rounded-lg">
-                        <div className="flex items-center gap-2 mb-2">
-                            <Zap className="h-5 w-5 text-purple-600" />
-                            <p className="text-sm text-gray-600">Đang sử dụng</p>
-                        </div>
-                        <p className="text-2xl font-bold">
-                            {station.totalChargingPoint - station.availableChargers}
-                        </p>
-                    </div>
-                </div>
-            </Card>
-
-            {/* Charging Points List */}
-            <StationChargingPoints 
-                stationId={station.stationId} 
-                stationName={station.name}
-            />
-        </div>
+      <div className="flex items-center justify-center h-64">
+        <p className="text-gray-500">Đang tải...</p>
+      </div>
     );
+  }
+
+  return (
+    <div className="p-6 space-y-6">
+      {/* Station List */}
+      <div>
+        <h1 className="text-2xl font-bold mb-6">Station List</h1>
+        
+        <Card className="overflow-hidden">
+          <Table>
+            <TableHeader>
+              <TableRow className="bg-white border-b">
+                <TableHead className="font-semibold text-gray-700">Name</TableHead>
+                <TableHead className="font-semibold text-gray-700">Location</TableHead>
+                <TableHead className="font-semibold text-gray-700">Ports</TableHead>
+                <TableHead className="font-semibold text-gray-700">Status</TableHead>
+                <TableHead className="font-semibold text-gray-700">Actions</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {stations.map((station) => (
+                <TableRow key={station.stationId} className="border-b hover:bg-gray-50">
+                  <TableCell className="font-medium">
+                    {station.name}
+                  </TableCell>
+                  <TableCell className="text-gray-600">
+                    {station.location}
+                  </TableCell>
+                  <TableCell className="font-medium">
+                    {station.totalChargingPoint}
+                  </TableCell>
+                  <TableCell>
+                    {getStatusBadge(station.status)}
+                  </TableCell>
+                  <TableCell>
+                    <div className="flex gap-2">
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => handleAddChargingPoint(station.stationId)}
+                        className="text-[#0f766e] hover:text-[#0f766e] hover:bg-[#0f766e]/10"
+                      >
+                        <Zap className="mr-1 h-4 w-4" />
+                        Thêm điểm sạc
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="hover:bg-gray-100"
+                      >
+                        View
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="hover:bg-gray-100"
+                      >
+                        Edit
+                      </Button>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </Card>
+      </div>
+
+      {/* Add Charging Point Modal */}
+      <AddChargingPointModal
+        isOpen={isAddChargingPointModalOpen}
+        onClose={() => setIsAddChargingPointModalOpen(false)}
+        onSuccess={handleAddChargingPointSuccess}
+        preSelectedStationId={selectedStationId}
+      />
+    </div>
+  );
 }

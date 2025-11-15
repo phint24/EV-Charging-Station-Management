@@ -6,7 +6,7 @@ import java.time.LocalDateTime;
 
 public record GenerateReportRequest(
 
-        @NotBlank(message = "ID Trạm không được để trống")
+        @NotNull(message = "ID Trạm không được để trống")
         Long stationId,
 
         @NotNull(message = "Ngày bắt đầu không được để trống")

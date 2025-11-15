@@ -23,6 +23,14 @@ import { ChargingStationDto } from '../../types';
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "../../components/ui/select";
 import { AddChargingPointModal } from '../../components/station/AddChargingPointModal';
 import { apiGetAllChargingPoints, apiUpdateChargingPoint} from '../../services/StationAPI';
+import { GenerateReportModal } from '../../components/report/GenerateReportModal';
+import { 
+  getAllReports, 
+  deleteReport,
+  Report,
+  formatCurrency,
+  formatDateTime 
+} from '../../services/ReportAPI';
 
 
 
@@ -34,13 +42,16 @@ interface Station {
   name: string;
   location: string;
   ports: number;
-  status: 'active' | 'maintenance' | 'offline';
+  status: 'AVAILABLE' | 'IN_USE' | 'OFFLINE';
   description?: string;
   operatingHours?: string;
 }
 
 export function AdminDashboard({ onNavigate }: AdminDashboardProps) {
   const [isAddStationModalOpen, setIsAddStationModalOpen] = useState(false); 
+  const [isGenerateReportModalOpen, setIsGenerateReportModalOpen] = useState(false);
+  const [reports, setReports] = useState<Report[]>([]);
+  const [isLoadingReports, setIsLoadingReports] = useState(false);
   const [isAddChargingPointModalOpen, setIsAddChargingPointModalOpen] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedStation, setSelectedStation] = useState<Station | null>(null);
@@ -48,23 +59,43 @@ export function AdminDashboard({ onNavigate }: AdminDashboardProps) {
   const [stations, setStations] = useState<Station[]>([]);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [editingStation, setEditingStation] = useState<Station | null>(null);
-  const [newStatus, setNewStatus] = useState<'active' | 'maintenance' | 'offline'>('active');
+  const [newStatus, setNewStatus] = useState<'AVAILABLE' | 'IN_USE' | 'OFFLINE'>('AVAILABLE');
   const [users, setUsers] = useState<UserDto[]>([]);
 
+  useEffect(() => {
+    fetchReports();
+}, []);
 
-  const mapFrontendToBackendStatus = (status: 'active' | 'maintenance' | 'offline'): 'AVAILABLE' | 'IN_USE' | 'OFFLINE' => {
-  return status === 'active'
-    ? 'AVAILABLE'
-    : status === 'maintenance'
-    ? 'IN_USE'
-    : 'OFFLINE';
+  const fetchReports = async () => {
+    setIsLoadingReports(true);
+    try {
+        console.log('Fetching reports...');
+        const data = await getAllReports();
+        console.log('Reports data received:', data);
+        setReports(data);
+        console.log('Đã load', data.length, 'reports');
+    } catch (error) {
+        console.error('Lỗi khi load reports:', error);
+        toast.error('Không thể tải danh sách báo cáo');
+    } finally {
+        setIsLoadingReports(false);
+    }
 };
-const mapBackendToFrontendStatus = (status: 'AVAILABLE' | 'IN_USE' | 'OFFLINE' | 'FAULTED') =>
-  status === 'AVAILABLE'
-    ? 'active'
-    : status === 'IN_USE'
-    ? 'maintenance'
-    : 'offline'; 
+
+
+//   const mapFrontendToBackendStatus = (status: 'AVAILABLE' | 'IN_USE' | 'OFFLINE'): 'AVAILABLE' | 'IN_USE' | 'OFFLINE' => {
+//   return status === 'AVAILABLE'
+//     ? 'AVAILABLE'
+//     : status === 'IN_USE'
+//     ? 'IN_USE'
+//     : 'OFFLINE';
+// };
+// const mapBackendToFrontendStatus = (status: 'AVAILABLE' | 'IN_USE' | 'OFFLINE' | 'FAULTED') =>
+//   status === 'AVAILABLE'
+//     ? 'AVAILABLE'
+//     : status === 'IN_USE'
+//     ? 'IN_USE'
+//     : 'OFFLINE'; 
 useEffect(() => {
   const fetchStations = async () => {
     try {
@@ -76,10 +107,10 @@ useEffect(() => {
         ports: dto.totalChargingPoint,
         status:
           dto.status === 'AVAILABLE'
-            ? 'active'
+            ? 'AVAILABLE'
             : dto.status === 'IN_USE'
-            ? 'maintenance'
-            : 'offline', 
+            ? 'IN_USE'
+            : 'OFFLINE', 
         description: undefined,
         operatingHours: undefined,
       }));
@@ -107,23 +138,36 @@ useEffect(() => {
   if (!editingStation) return;
 
   try {
-    const backendStatus = mapFrontendToBackendStatus(newStatus);
+    // const backendStatus = mapFrontendToBackendStatus(newStatus);
     const data: UpdateStationRequest = {
       name: editingStation.name,              
       location: editingStation.location,     
-      status: backendStatus,                  
+      status: newStatus,                  
       totalChargingPoint: editingStation.ports,  
       availableChargers: editingStation.ports,    
     };
-    const updatedStation = await apiUpdateStation(editingStation.id, data);
+    await apiUpdateStation(editingStation.id, data);
+     // Refetch lại danh sách stations từ backend
+    const updatedData = await apiGetAllStations();
+    const mappedStations: Station[] = updatedData.map((dto) => ({
+      id: dto.stationId,
+      name: dto.name,
+      location: dto.location,
+      ports: dto.totalChargingPoint,
+      status: dto.status as 'AVAILABLE' | 'IN_USE' | 'OFFLINE',
+      description: undefined,
+      operatingHours: undefined,
+    }));
+    setStations(mappedStations);
+    // const updatedStation = await apiUpdateStation(editingStation.id, data);
     toast.success('Cập nhật trạng thái thành công!');
-    setStations((prev) =>
-      prev.map((s) =>
-        s.id === editingStation.id
-          ? { ...s, status: mapBackendToFrontendStatus(updatedStation.status) }
-          : s
-      )
-    );
+    // setStations((prev) =>
+    //   prev.map((s) =>
+    //     s.id === editingStation.id
+    //       ? { ...s, status: newStatus }
+    //       : s
+    //   )
+    // );
 
     setIsEditModalOpen(false);
   } catch (err) {
@@ -184,11 +228,11 @@ useEffect(() => {
   ];
 
   // Mock recent stations (thêm stationId)
-  const recentStations = [
-    { id: 1, name: 'Trạm sạc Central Plaza', location: 'Quận 1, TP.HCM', status: 'active', totalPorts: 8, availablePorts: 5 },
-    { id: 2, name: 'Trạm sạc Vincom Mega', location: 'Quận 2, TP.HCM', status: 'active', totalPorts: 6, availablePorts: 2 },
-    { id: 3, name: 'Trạm sạc Tech Park', location: 'Quận 9, TP.HCM', status: 'offline', totalPorts: 4, availablePorts: 0 },
-  ];
+  // const recentStations = [
+  //   { id: 1, name: 'Trạm sạc Central Plaza', location: 'Quận 1, TP.HCM', status: 'active', totalPorts: 8, availablePorts: 5 },
+  //   { id: 2, name: 'Trạm sạc Vincom Mega', location: 'Quận 2, TP.HCM', status: 'active', totalPorts: 6, availablePorts: 2 },
+  //   { id: 3, name: 'Trạm sạc Tech Park', location: 'Quận 9, TP.HCM', status: 'offline', totalPorts: 4, availablePorts: 0 },
+  // ];
 
   // Mock recent users
   const recentUsers = [
@@ -204,17 +248,80 @@ useEffect(() => {
     { id: 'a-003', type: 'error', message: 'Port P2 at Vincom Mega reported faulty', time: '2 hours ago' },
   ];
 
+  // const handleExportReport = async () => {
+  //   try {
+  //     toast.success('Đang chuẩn bị tải xuống báo cáo...');
+  //     await exportRevenueReport();
+  //     toast.success('Báo cáo đã được tải xuống thành công!');
+  //   } catch (error) {
+  //     console.error('Export failed:', error);
+  //     toast.error('Không thể tải xuống báo cáo. Vui lòng thử lại.');
+  //   }
+    
+  // };
   const handleExportReport = async () => {
     try {
-      toast.success('Đang chuẩn bị tải xuống báo cáo...');
-      await exportRevenueReport();
-      toast.success('Báo cáo đã được tải xuống thành công!');
+        if (reports.length === 0) {
+            toast.error('Chưa có báo cáo nào để export. Hãy tạo báo cáo trước!');
+            setIsGenerateReportModalOpen(true);
+            return;
+        }
+        
+        toast.success('Đang chuẩn bị tải xuống báo cáo...');
+        await exportRevenueReport();
+        toast.success(`Đã tải xuống ${reports.length} báo cáo thành công!`);
     } catch (error) {
-      console.error('Export failed:', error);
-      toast.error('Không thể tải xuống báo cáo. Vui lòng thử lại.');
+        console.error('Export failed:', error);
+        toast.error('Không thể tải xuống báo cáo. Vui lòng thử lại.');
     }
+};
+
+
+const handleGenerateReport = () => {
+    setIsGenerateReportModalOpen(true);
+};
+
+const handleCloseGenerateReportModal = () => {
+    setIsGenerateReportModalOpen(false);
+};
+
+const handleGenerateReportSuccess = async () => {
+    console.log('handleGenerateReportSuccess called');
+    toast.success('Báo cáo đã được tạo thành công!');
+
+    setIsLoadingReports(true);
+
+    try {
+        console.log('Fetching reports...');
+        const data = await getAllReports();
+
+        // KHÔNG cần mapping lại, vì data từ API đã đúng format
+        console.log('Raw reports data:', data);
+        setReports(data);
+        console.log('Đã refresh danh sách reports:', data.length, 'báo cáo');
+
+    } catch (error) {
+        console.error('Failed to refresh reports', error);
+        toast.error('Không thể tải lại danh sách báo cáo');
+    } finally {
+        setIsLoadingReports(false);
+    }
+};
+
+
+const handleDeleteReport = async (reportId: number) => {
+    if (!confirm('Bạn có chắc muốn xóa báo cáo này?')) return;
     
-  };
+    try {
+        await deleteReport(reportId);
+        toast.success('Đã xóa báo cáo');
+        fetchReports(); // Refresh danh sách
+    } catch (error) {
+        console.error('Error deleting report:', error);
+        toast.error('Không thể xóa báo cáo');
+    }
+};
+
   const handleAddStation = () => {
     setIsAddStationModalOpen(true);
 };
@@ -223,9 +330,24 @@ const handleCloseModal = () => {
     setIsAddStationModalOpen(false);
 };
 
-const handleAddStationSuccess = () => {
+const handleAddStationSuccess = async () => {
     toast.success('Trạm sạc đã được thêm thành công!');
-    // TODO: Refresh station list
+        // Refresh station list
+    try {
+      const data = await apiGetAllStations();
+      const mappedStations: Station[] = data.map((dto) => ({
+        id: dto.stationId,
+        name: dto.name,
+        location: dto.location,
+        ports: dto.totalChargingPoint,
+        status: dto.status as 'AVAILABLE' | 'IN_USE' | 'OFFLINE',
+        description: undefined,
+        operatingHours: undefined,
+      }));
+      setStations(mappedStations);
+    } catch (err) {
+      console.error('Failed to refresh stations', err);
+    }
 };
 
  const handleAddChargingPoint = (stationId: number, stationName: string) => {
@@ -234,9 +356,27 @@ const handleAddStationSuccess = () => {
     toast.info(`Thêm điểm sạc cho ${stationName}`);
   };
 
-  const handleAddChargingPointSuccess = () => {
+  const handleAddChargingPointSuccess = async () => {
     toast.success('Điểm sạc đã được thêm thành công!');
     // TODO: Refresh charging points list
+        // Refresh station list để cập nhật số lượng cổng
+    try {
+      const data = await apiGetAllStations();
+      const mappedStations: Station[] = data.map((dto) => ({
+        id: dto.stationId,
+        name: dto.name,
+        location: dto.location,
+        ports: dto.totalChargingPoint,
+        status: dto.status as 'AVAILABLE' | 'IN_USE' | 'OFFLINE',
+        description: undefined,
+        operatingHours: undefined,
+      }));
+      setStations(mappedStations);
+      console.log('Đã refresh danh sách stations sau khi thêm điểm sạc');
+    } catch (err) {
+      console.error('Failed to refresh stations after adding charging point', err);
+      toast.error('Không thể tải lại danh sách trạm sạc');
+    }
   };
 
   const handleEditUser = (userId: string) => {
@@ -244,11 +384,15 @@ const handleAddStationSuccess = () => {
     // Open user edit modal or navigate to edit page
   };
 
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(amount);
-  };
-  
+  // const formatCurrency = (amount: number) => {
+  //   return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(amount);
+  // };
 
+  // const formatDateTime = (dateString: string) => {
+  //   const date = new Date(dateString);
+  //   return date.toLocaleString('vi-VN');
+  // };
+  
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -258,15 +402,19 @@ const handleAddStationSuccess = () => {
           <p className="text-gray-600">Comprehensive system overview and analytics</p>
         </div>
         <div className="flex gap-2">
-          <Button variant="outline" onClick={handleExportReport}>
-            <Download className="mr-2 h-4 w-4" />
-            Export Report
-          </Button>
-          <Button className="bg-[#0f766e] hover:bg-[#0f766e]/90" onClick={handleAddStation}>
-            <Plus className="mr-2 h-4 w-4" />
-            Add Station
-          </Button>
-        </div>
+  <Button variant="outline" onClick={handleGenerateReport}>
+    <Plus className="mr-2 h-4 w-4" />
+    Generate Report
+  </Button>
+  <Button variant="outline" onClick={handleExportReport}>
+    <Download className="mr-2 h-4 w-4" />
+    Export Report ({reports.length})
+  </Button>
+  <Button className="bg-[#0f766e] hover:bg-[#0f766e]/90" onClick={handleAddStation}>
+    <Plus className="mr-2 h-4 w-4" />
+    Add Station
+  </Button>
+</div>
       </div>
 
       {/* Statistics */}
@@ -336,6 +484,9 @@ const handleAddStationSuccess = () => {
           <Card className="p-6 rounded-2xl w-full max-w-full">
           <div className="flex items-center justify-between mb-4">
             <h2>Station List</h2>
+            <Button variant="outline" onClick={() => onNavigate('/admin/stations')}>
+            View All Stations
+            </Button>
           </div>
 
           <div className="rounded-2xl border overflow-x-auto w-full">
@@ -358,9 +509,9 @@ const handleAddStationSuccess = () => {
                     <TableCell>
                       <Badge
                         className={
-                          station.status === 'active'
+                          station.status === 'AVAILABLE'
                             ? 'bg-green-500'
-                            : station.status === 'maintenance'
+                            : station.status === 'IN_USE'
                             ? 'bg-yellow-500'
                             : 'bg-red-500'
                         }
@@ -369,6 +520,16 @@ const handleAddStationSuccess = () => {
                       </Badge>
                     </TableCell>
                     <TableCell>
+                      <div className="flex gap-2">
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => handleAddChargingPoint(station.id, station.name)}
+                        className="text-[#0f766e] hover:text-[#0f766e] hover:bg-[#0f766e]/10"
+                      >
+                        <Zap className="mr-1 h-4 w-4" />
+                        Thêm điểm sạc
+                      </Button>
                       <Button
                         size="sm"
                         variant="ghost"
@@ -383,6 +544,7 @@ const handleAddStationSuccess = () => {
                         >
                           Edit
                         </Button>
+                      </div>
                     </TableCell>
                   </TableRow>
                 ))}
@@ -400,9 +562,9 @@ const handleAddStationSuccess = () => {
                 <strong>Status:</strong>{' '}
                 <Badge
                   className={
-                    selectedStation.status === 'active'
+                    selectedStation.status === 'AVAILABLE'
                       ? 'bg-green-500'
-                      : selectedStation.status === 'maintenance'
+                      : selectedStation.status === 'IN_USE'
                       ? 'bg-yellow-500'
                       : 'bg-red-500'
                   }
@@ -429,9 +591,9 @@ const handleAddStationSuccess = () => {
                   <SelectValue placeholder="Chọn trạng thái" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="active"> Active</SelectItem>
-                  <SelectItem value="maintenance"> Maintenance</SelectItem>
-                  <SelectItem value="offline"> Offline</SelectItem>
+                  <SelectItem value="AVAILABLE"> Available</SelectItem>
+                  <SelectItem value="IN_USE"> In_use</SelectItem>
+                  <SelectItem value="OFFLINE"> Offline</SelectItem>
                 </SelectContent>
               </Select>
 
@@ -448,56 +610,6 @@ const handleAddStationSuccess = () => {
         )}
       </div>
 
-       {/* Recent Stations - THÊM PHẦN NÀY */}
-      <Card className="p-6 rounded-2xl">
-        <div className="flex items-center justify-between mb-4">
-          <h2>Recent Stations</h2>
-          <Button variant="outline" onClick={() => onNavigate('/admin/stations')}>
-            View All
-          </Button>
-        </div>
-        <div className="rounded-2xl border overflow-hidden">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Tên trạm</TableHead>
-                <TableHead>Vị trí</TableHead>
-                <TableHead>Trạng thái</TableHead>
-                <TableHead>Cổng sạc</TableHead>
-                <TableHead>Thao tác</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {recentStations.map((station) => (
-                <TableRow key={station.id}>
-                  <TableCell className="font-medium">{station.name}</TableCell>
-                  <TableCell>{station.location}</TableCell>
-                  <TableCell>
-                    <Badge className={station.status === 'active' ? 'bg-green-500' : 'bg-gray-500'}>
-                      {station.status === 'active' ? 'Hoạt động' : 'Offline'}
-                    </Badge>
-                  </TableCell>
-                  <TableCell>
-                    {station.availablePorts}/{station.totalPorts}
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex gap-2">
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        onClick={() => handleAddChargingPoint(station.id, station.name)}
-                      >
-                        <Zap className="mr-1 h-4 w-4" />
-                        Thêm điểm sạc
-                      </Button>
-                    </div>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </div>
-      </Card>
 
       {/* Recent Users */}
       <Card className="p-6 rounded-2xl">
@@ -544,6 +656,108 @@ const handleAddStationSuccess = () => {
           </Table>
         </div>
       </Card>
+
+            {/* Reports List */}
+      <Card className="p-6 rounded-2xl">
+        <div className="flex items-center justify-between mb-4">
+          <h2>Danh sách báo cáo</h2>
+          <Badge variant="outline">
+            {isLoadingReports ? 'Đang tải...' : `${reports.length} báo cáo`}
+          </Badge>
+        </div>
+        
+        {isLoadingReports ? (
+          <div className="text-center py-8 text-gray-500">
+            Đang tải danh sách báo cáo...
+          </div>
+        ) : reports.length === 0 ? (
+          <div className="text-center py-8">
+            <p className="text-gray-500 mb-4">Chưa có báo cáo nào. Hãy tạo báo cáo mới!</p>
+            <Button onClick={handleGenerateReport} className="bg-[#0f766e]">
+              <Plus className="mr-2 h-4 w-4" />
+              Tạo báo cáo đầu tiên
+            </Button>
+          </div>
+        ) : (
+          <div className="rounded-2xl border overflow-hidden">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>ID</TableHead>
+                  <TableHead>Loại</TableHead>
+                  <TableHead>Trạm sạc</TableHead>
+                  <TableHead>Thời gian</TableHead>
+                  <TableHead>Doanh thu</TableHead>
+                  <TableHead>Năng lượng</TableHead>
+                  <TableHead>Phiên sạc</TableHead>
+                  <TableHead>Hành động</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {reports.map((report) => (
+                  <TableRow key={report.reportId}>
+                    <TableCell className="font-medium">#{report.reportId}</TableCell>
+                    <TableCell>
+                      <Badge 
+                        className={
+                          report.reportType === 'REVENUE' 
+                            ? 'bg-green-500' 
+                            : 'bg-blue-500'
+                        }
+                      >
+                        {report.reportType}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>
+                      <div>
+                        <p className="font-medium">{report.station.name}</p>
+                        <p className="text-xs text-gray-500">{report.station.location}</p>
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <div className="text-xs">
+                        <p>{formatDateTime(report.periodStart)}</p>
+                        <p className="text-gray-500">đến</p>
+                        <p>{formatDateTime(report.periodEnd)}</p>
+                      </div>
+                    </TableCell>
+                    <TableCell className="font-medium">
+                      {formatCurrency(report.totalRevenue)}
+                    </TableCell>
+                    <TableCell>
+                      {report.totalEnergy !== undefined && report.totalEnergy !== null
+                        ? report.totalEnergy.toLocaleString()
+                        : "0"
+                      } kWh
+                    </TableCell>
+                    <TableCell>
+                      {report.totalSessions}
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex gap-2">
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => handleDeleteReport(report.reportId)}
+                        >
+                          Xóa
+                        </Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+        )}
+      </Card>
+
+      {/* Generate Report Modal */}
+      <GenerateReportModal
+        isOpen={isGenerateReportModalOpen}
+        onClose={handleCloseGenerateReportModal}
+        onSuccess={handleGenerateReportSuccess}
+      />
       <AddStationModal
         isOpen={isAddStationModalOpen}
         onClose={handleCloseModal}

@@ -4,6 +4,8 @@ import jakarta.persistence.*;
 import lombok.*;
 import java.util.List;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 @Entity
 @Table(name = "charging_stations")
 @Data
@@ -42,5 +44,6 @@ public class ChargingStation {
     private int availableChargers;
 
     @OneToMany(mappedBy = "station", cascade = CascadeType.ALL)
+    @JsonIgnore  // ← THÊM DÒNG NÀY ĐỂ NGĂN VÒNG LẶP
     private List<ChargingPoint> chargingPoints;
 }

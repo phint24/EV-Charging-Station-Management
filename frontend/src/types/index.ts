@@ -115,7 +115,7 @@ export interface Station {
   name: string;
   location: string;
   ports: number;
-  status: 'active' | 'maintenance' | 'offline';
+  status: 'AVAILABLE' | 'IN_USE' | 'OFFLINE';
   description?: string;
   operatingHours?: string;
 }
@@ -123,6 +123,6 @@ export interface Station {
 export interface ChargingPoint {
   id: number;
   name: string;
-  status: 'active' | 'maintenance' | 'offline';
+  status: 'AVAILABLE' | 'CHARGING' | 'UNAVAILABLE' | 'OFFLINE';
   stationId: number;
 }
