@@ -7,7 +7,7 @@ import { StationCard } from '../../components/station/StationCard';
 import { ChargingSessionPanel } from '../../components/charging/ChargingSessionPanel';
 import { WalletPanel } from '../../components/payment/WalletPanel';
 import { QRScannerButton } from '../../components/shared/QRScannerButton';
-import { Zap, Car, Plus, Trash2 } from 'lucide-react';
+import { Zap, Car, Plus, Trash2, CreditCard, Building2, CalendarClock } from 'lucide-react';
 import { toast } from 'sonner';
 import "../../styles/globals.css";
 import axios from 'axios';
@@ -15,7 +15,9 @@ import axios from 'axios';
 import {
     apiGetDriverProfile,
     apiAddVehicle,
-    apiDeleteVehicle
+    apiDeleteVehicle,
+    apiGetPaymentMethods,
+    apiDeletePaymentMethod
 } from '../../services/DriverAPI';
 import {
     apiGetAllSessions,
@@ -23,7 +25,12 @@ import {
     apiStopSession
 } from '../../services/ChargeSessionAPI';
 import { apiGetAllStations } from '../../services/StationAPI';
+import {
+    apiGetMyBookings,
+    apiCancelBooking
+} from '../../services/BookingAPI';
 import { AddVehicleModal } from '../../components/vehicle/AddVehicleModal';
+import { AddPaymentMethodModal } from '../../components/payment/AddPaymentMethodModal';
 
 import {
     ChargeSessionDto,
@@ -31,7 +38,9 @@ import {
     CreateSessionData,
     StopSessionData,
     ChargingStationDto,
-    VehicleDto
+    VehicleDto,
+    PaymentMethodDto,
+    BookingDto
 } from '../../types';
 
 interface DriverDashboardProps {
@@ -57,6 +66,60 @@ function VehicleCard({ vehicle, onDelete }: { vehicle: VehicleDto, onDelete: () 
     );
 }
 
+function PaymentMethodCard({ method, onDelete }: { method: PaymentMethodDto, onDelete: () => void }) {
+    return (
+        <div className="p-4 rounded-lg border bg-white flex items-center justify-between">
+            <div className="flex items-center gap-3">
+                {method.type === 'CREDIT_CARD' ? <CreditCard className="h-6 w-6 text-blue-500" /> : <Building2 className="h-6 w-6 text-green-500" />}
+                <div>
+                    <p className="font-medium">{method.provider}</p>
+                    <p className="text-sm text-gray-500">
+                        {method.type.replace('_', ' ')}
+                        {method.isDefault && <span className="text-xs text-green-600 ml-2">(Mặc định)</span>}
+                    </p>
+                </div>
+            </div>
+            <Button variant="ghost" size="icon" onClick={onDelete} className="text-red-500 hover:text-red-600">
+                <Trash2 className="h-4 w-4" />
+            </Button>
+        </div>
+    );
+}
+
+function BookingCard({ booking, onCancel }: { booking: BookingDto, onCancel: () => void }) {
+    const formatDateTime = (dateTime: string) => {
+        return new Date(dateTime).toLocaleString('vi-VN', {
+            day: '2-digit',
+            month: '2-digit',
+            hour: '2-digit',
+            minute: '2-digit'
+        });
+    };
+
+    return (
+        <div className="p-4 rounded-lg border bg-white">
+            <div className="flex items-center justify-between">
+                <div>
+                    <p className="font-medium">{booking.stationName}</p>
+                    <p className="text-sm text-gray-500">Cổng ID: {booking.chargingPointId}</p>
+                </div>
+                <Badge variant={booking.status === 'PENDING' ? "default" : "secondary"}>
+                    {booking.status}
+                </Badge>
+            </div>
+            <div className="text-sm text-gray-700 mt-2">
+                <p>Từ: {formatDateTime(booking.startTime)}</p>
+                <p>Đến: {formatDateTime(booking.endTime)}</p>
+            </div>
+            {(booking.status === 'PENDING' || booking.status === 'CONFIRMED') && (
+                <Button variant="link" size="sm" onClick={onCancel} className="text-red-500 p-0 h-auto mt-2">
+                    Hủy đặt chỗ
+                </Button>
+            )}
+        </div>
+    );
+}
+
 
 export function DriverDashboard({ onNavigate, isWalletDialogOpen, onWalletDialogChange }: DriverDashboardProps) {
 
@@ -65,18 +128,22 @@ export function DriverDashboard({ onNavigate, isWalletDialogOpen, onWalletDialog
     const [stations, setStations] = useState<ChargingStationDto[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [walletBalance, setWalletBalance] = useState(0);
-
     const [isAddVehicleModalOpen, setIsAddVehicleModalOpen] = useState(false);
+    const [isAddMethodModalOpen, setIsAddMethodModalOpen] = useState(false);
+    const [paymentMethods, setPaymentMethods] = useState<PaymentMethodDto[]>([]);
+    const [bookings, setBookings] = useState<BookingDto[]>([]);
 
     const loadDashboardData = async () => {
         console.log("Đang tải dữ liệu dashboard...");
         try {
             setIsLoading(true);
 
-            const [profile, allSessions, allStations] = await Promise.all([
+            const [profile, allSessions, allStations, methods, myBookings] = await Promise.all([
                 apiGetDriverProfile(),
                 apiGetAllSessions(),
-                apiGetAllStations()
+                apiGetAllStations(),
+                apiGetPaymentMethods(),
+                apiGetMyBookings()
             ]);
 
             setDriverProfile(profile);
@@ -89,6 +156,12 @@ export function DriverDashboard({ onNavigate, isWalletDialogOpen, onWalletDialog
 
             setStations(allStations);
             console.log("Tải trạm sạc thành công:", allStations);
+
+            setPaymentMethods(methods);
+            console.log("Tải phương thức thanh toán thành công:", methods);
+
+            setBookings(myBookings.filter(b => b.status === 'PENDING' || b.status === 'CONFIRMED'));
+            console.log("Tải đặt chỗ thành công:", myBookings);
 
         } catch (error) {
             console.error('Không thể tải dữ liệu dashboard:', error);
@@ -119,7 +192,6 @@ export function DriverDashboard({ onNavigate, isWalletDialogOpen, onWalletDialog
     };
 
     const handleStartCharging = async () => {
-
         if (!driverProfile) {
             toast.error("Không tìm thấy thông tin tài xế.");
             return;
@@ -128,16 +200,13 @@ export function DriverDashboard({ onNavigate, isWalletDialogOpen, onWalletDialog
             toast.error("Bạn chưa thêm xe nào vào hồ sơ.");
             return;
         }
-
         const vehicleId = driverProfile.vehicles[0].id;
         const chargingPointId = 1;
-
         const sessionData: CreateSessionData = {
             driverId: driverProfile.id,
             vehicleId: vehicleId,
             chargingPointId: chargingPointId
         };
-
         try {
             const newSession = await apiStartSession(sessionData);
             setActiveSession(newSession);
@@ -152,21 +221,17 @@ export function DriverDashboard({ onNavigate, isWalletDialogOpen, onWalletDialog
         }
     };
 
-    const handleStopCharging = async () => {
+    const handleStopCharging = async (finalEnergy: number) => {
         if (!activeSession) return;
-
+        const roundedEnergyUsed = Math.round(finalEnergy * 100) / 100;
         const stopData: StopSessionData = {
-            energyUsed: 10.5
+            energyUsed: roundedEnergyUsed
         };
-
         try {
             const stoppedSession = await apiStopSession(activeSession.sessionId, stopData);
-
             setActiveSession(null);
             toast.success('Đã dừng phiên sạc.');
-
             setWalletBalance(prev => prev - stoppedSession.cost);
-
         } catch (error: any) {
             console.error('Failed to stop session:', error);
             let errorMessage = "Không thể dừng phiên sạc.";
@@ -198,6 +263,40 @@ export function DriverDashboard({ onNavigate, isWalletDialogOpen, onWalletDialog
         }
     };
 
+    const handlePaymentMethodChange = async () => {
+        try {
+            const methods = await apiGetPaymentMethods();
+            setPaymentMethods(methods);
+        } catch (error) {
+            toast.error("Không thể cập nhật danh sách thanh toán.");
+        }
+    };
+
+    const handleDeletePaymentMethod = async (methodId: number) => {
+        if (window.confirm("Bạn có chắc chắn muốn xóa phương thức thanh toán này?")) {
+            try {
+                await apiDeletePaymentMethod(methodId);
+                toast.success("Đã xóa phương thức thanh toán.");
+                handlePaymentMethodChange();
+            } catch (error) {
+                toast.error("Không thể xóa.");
+            }
+        }
+    };
+
+    const handleCancelBooking = async (bookingId: number) => {
+        if (window.confirm("Bạn có chắc chắn muốn hủy lịch đặt chỗ này?")) {
+            try {
+                await apiCancelBooking(bookingId);
+                toast.success("Đã hủy đặt chỗ thành công.");
+
+                const myBookings = await apiGetMyBookings();
+                setBookings(myBookings.filter(b => b.status === 'PENDING' || b.status === 'CONFIRMED'));
+            } catch (error) {
+                toast.error("Không thể hủy đặt chỗ.");
+            }
+        }
+    };
 
     if (isLoading) {
         return (
@@ -284,11 +383,32 @@ export function DriverDashboard({ onNavigate, isWalletDialogOpen, onWalletDialog
 
                     <Card className="p-6 rounded-2xl">
                         <div className="flex items-center justify-between mb-4">
+                            <h3 className="text-lg font-medium">Lịch đặt chỗ sắp tới</h3>
+                        </div>
+                        <div className="space-y-3">
+                            {bookings.length === 0 ? (
+                                <p className="text-sm text-gray-500 text-center py-4">
+                                    Bạn không có lịch đặt chỗ nào.
+                                </p>
+                            ) : (
+                                bookings.map(booking => (
+                                    <BookingCard
+                                        key={booking.id}
+                                        booking={booking}
+                                        onCancel={() => handleCancelBooking(booking.id)}
+                                    />
+                                ))
+                            )}
+                        </div>
+                    </Card>
+
+                    <Card className="p-6 rounded-2xl">
+                        <div className="flex items-center justify-between mb-4">
                             <h3 className="text-lg font-medium">Phương tiện của tôi</h3>
                             <Button
                                 size="sm"
                                 variant="outline"
-                                onClick={() => setIsAddVehicleModalOpen(true)} // Mở modal
+                                onClick={() => setIsAddVehicleModalOpen(true)}
                             >
                                 <Plus className="h-4 w-4 mr-2" /> Thêm Xe
                             </Button>
@@ -310,6 +430,33 @@ export function DriverDashboard({ onNavigate, isWalletDialogOpen, onWalletDialog
                         </div>
                     </Card>
 
+                    <Card className="p-6 rounded-2xl">
+                        <div className="flex items-center justify-between mb-4">
+                            <h3 className="text-lg font-medium">Thanh toán</h3>
+                            <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => setIsAddMethodModalOpen(true)}
+                            >
+                                <Plus className="h-4 w-4 mr-2" /> Thêm Thẻ
+                            </Button>
+                        </div>
+                        <div className="space-y-3">
+                            {paymentMethods.length === 0 ? (
+                                <p className="text-sm text-gray-500 text-center py-4">
+                                    Bạn chưa thêm phương thức thanh toán nào.
+                                </p>
+                            ) : (
+                                paymentMethods.map(method => (
+                                    <PaymentMethodCard
+                                        key={method.id}
+                                        method={method}
+                                        onDelete={() => handleDeletePaymentMethod(method.id)}
+                                    />
+                                ))
+                            )}
+                        </div>
+                    </Card>
                 </div>
             </div>
 
@@ -317,6 +464,13 @@ export function DriverDashboard({ onNavigate, isWalletDialogOpen, onWalletDialog
                 isOpen={isAddVehicleModalOpen}
                 onClose={() => setIsAddVehicleModalOpen(false)}
                 onSuccess={handleVehicleChange}
+            />
+
+            <AddPaymentMethodModal
+                isOpen={isAddMethodModalOpen}
+                onClose={() => setIsAddMethodModalOpen(false)}
+                onSuccess={handlePaymentMethodChange}
+                driverId={driverProfile.id}
             />
         </div>
     );
