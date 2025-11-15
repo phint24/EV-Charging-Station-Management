@@ -1,6 +1,4 @@
-
-
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Card } from '../../components/ui/card';
 import { Badge } from '../../components/ui/badge';
 import { Button } from '../../components/ui/button';
@@ -17,6 +15,8 @@ import {
 import { Zap, MapPin, Users, DollarSign, Search, Play, StopCircle, AlertCircle } from 'lucide-react';
 import { sampleStations } from '../../data/sample';
 import { toast } from 'sonner';
+import { apiGetAllSessions, apiStopSession, apiStartSession, apiGetActiveSessions , apiResumeSession} from '../../services/sessionAPI';
+import { ChargeSessionDto } from '../../types';
 
 interface StaffDashboardProps {
   onNavigate: (path: string) => void;
@@ -24,46 +24,79 @@ interface StaffDashboardProps {
 
 export function StaffDashboard({ onNavigate }: StaffDashboardProps) {
   const [searchTerm, setSearchTerm] = useState('');
+  //const [activeSessions, setActiveSessions] = useState<ChargeSessionDto[]>([]);
+  //const [activeSessions, setActiveSessions] = useState<any[]>([]);
+  const [activeSessions, setActiveSessions] = useState<ChargeSessionDto[]>([]);
+  const [loading, setLoading] = useState(false);
+  const fetchSessions = async () => {
+    try {
+      setLoading(true);
+      const data = await apiGetActiveSessions();
+      setActiveSessions(data);
+    } catch (err) {
+      console.error(err);
+      toast.error("Không thể tải danh sách phiên sạc");
+    } finally {
+      setLoading(false);
+    }
+  };
+  useEffect(() => {
+    fetchSessions();
+  }, []);
+
+// Load sessions from backend
+  // useEffect(() => {
+  //   loadSessions();
+  // }, []);
+
+  // const loadSessions = async () => {
+  //   try {
+  //     const data = await apiGetActiveSessions();
+  //     setActiveSessions(data);
+  //   } catch (err) {
+  //     toast.error("Không thể tải danh sách phiên sạc");
+  //   }
+  // };
 
   // Mock active sessions
-  const activeSessions = [
-    {
-      id: 'ses-001',
-      userName: 'Nguyen Van A',
-      stationName: 'Central Plaza',
-      portId: 'P1',
-      portType: 'CCS',
-      startTime: '14:30',
-      soc: 67,
-      kWh: 32.5,
-      cost: 146250,
-      status: 'charging',
-    },
-    {
-      id: 'ses-002',
-      userName: 'Tran Thi B',
-      stationName: 'Vincom Mega',
-      portId: 'P2',
-      portType: 'Type2',
-      startTime: '15:10',
-      soc: 45,
-      kWh: 18.2,
-      cost: 91000,
-      status: 'charging',
-    },
-    {
-      id: 'ses-003',
-      userName: 'Le Van C',
-      stationName: 'Central Plaza',
-      portId: 'P3',
-      portType: 'CHAdeMO',
-      startTime: '15:45',
-      soc: 23,
-      kWh: 8.7,
-      cost: 39150,
-      status: 'charging',
-    },
-  ];
+  // const activeSessions = [
+  //   {
+  //     id: 'ses-001',
+  //     userName: 'Nguyen Van A',
+  //     stationName: 'Central Plaza',
+  //     portId: 'P1',
+  //     portType: 'CCS',
+  //     startTime: '14:30',
+  //     soc: 67,
+  //     kWh: 32.5,
+  //     cost: 146250,
+  //     status: 'charging',
+  //   },
+  //   {
+  //     id: 'ses-002',
+  //     userName: 'Tran Thi B',
+  //     stationName: 'Vincom Mega',
+  //     portId: 'P2',
+  //     portType: 'Type2',
+  //     startTime: '15:10',
+  //     soc: 45,
+  //     kWh: 18.2,
+  //     cost: 91000,
+  //     status: 'charging',
+  //   },
+  //   {
+  //     id: 'ses-003',
+  //     userName: 'Le Van C',
+  //     stationName: 'Central Plaza',
+  //     portId: 'P3',
+  //     portType: 'CHAdeMO',
+  //     startTime: '15:45',
+  //     soc: 23,
+  //     kWh: 8.7,
+  //     cost: 39150,
+  //     status: 'charging',
+  //   },
+  // ];
 
   const stats = [
     {
@@ -101,10 +134,66 @@ export function StaffDashboard({ onNavigate }: StaffDashboardProps) {
     // API: POST /ports/{portId}/toggle
   };
 
-  const handleStopSession = (sessionId: string) => {
-    toast.success('Session stopped successfully');
-    // API: POST /sessions/{sessionId}/stop
-  };
+
+
+  const handleToggleSession = async (session: ChargeSessionDto) => {
+  try {
+    if (session.status === "ACTIVE" || session.status === "CHARGING") {
+      await apiStopSession(session.sessionId, { energyUsed: session.energyUsed || 0 });
+      toast.success("Session stopped");
+    } else {
+      await apiStartSession({
+        driverId: session.driverId,
+        vehicleId: session.vehicleId,
+        chargingPointId: session.chargingPointId,
+      });
+      toast.success("Session started");
+    }
+    // if (session.status === "CHARGING") {
+    //   await apiStopSession(session.sessionId, { energyUsed: session.energyUsed || 0 });
+    //   toast.success("Session stopped");
+    // } else {
+    //   await apiStartSession({
+    //     driverId: session.driverId,
+    //     vehicleId: session.vehicleId,
+    //     chargingPointId: session.chargingPointId,
+    //   });
+    //   toast.success("Session started");
+    // }
+    await fetchSessions(); // cập nhật danh sách sau toggle
+  } catch (err) {
+    console.error(err);
+    toast.error("Failed to toggle session");
+  }
+};
+//   const stopStatuses = ["ACTIVE", "CHARGING", "RUNNING"];
+//   const startStatuses = ["STOPPED", "PAUSED", "PENDING"];
+
+// const handleToggleSession = async (session: ChargeSessionDto) => {
+//   try {
+//     // Nhóm trạng thái có thể stop
+//     if (stopStatuses.includes(session.status)) {
+//       await apiStopSession(session.sessionId, { energyUsed: session.energyUsed || 0 });
+//       toast.success("Session stopped");
+//     } else if (startStatuses.includes(session.status)) {
+//       await apiResumeSession(session.sessionId);
+//       toast.success("Session resumed");
+//     } else {
+//       toast.error("Cannot start this session");
+//       return;
+//     }
+
+
+//     await fetchSessions(); // refresh danh sách
+//   } catch (err: any) {
+//     console.error(err.response?.data || err);
+//     toast.error(err.response?.data?.message || "Failed to toggle session");
+//   }
+// };
+
+
+
+
 
   const handleReportIncident = (stationId: string) => {
     toast.info('Incident report form opened');
@@ -162,35 +251,36 @@ export function StaffDashboard({ onNavigate }: StaffDashboardProps) {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {activeSessions.map((session) => (
-                <TableRow key={session.id}>
-                  <TableCell>{session.userName}</TableCell>
-                  <TableCell>{session.stationName}</TableCell>
+              {activeSessions.map((s) => (
+                <TableRow key={s.sessionId}>
+                  <TableCell>{s.driverId}</TableCell>
+                  <TableCell>{s.stationId}</TableCell>
+                  <TableCell>{s.chargingPointId}</TableCell>
+                  <TableCell>{new Date(s.startTime).toLocaleTimeString()}</TableCell>
                   <TableCell>
-                    <Badge variant="outline">{session.portId} • {session.portType}</Badge>
+                    {s.status === "ACTIVE" ? (
+                      <Badge className="bg-green-600">Charging</Badge>
+                    ) : (
+                      <Badge className="bg-gray-600">Complete</Badge>
+                    )}
+                    {/* {s.status === "CHARGING" ? (
+                      <Badge className="bg-green-600">Charging</Badge>
+                    ) : (
+                      <Badge className="bg-gray-600">Stopped</Badge>
+                    )} */}
                   </TableCell>
-                  <TableCell>{session.startTime}</TableCell>
+                  <TableCell>{s.energyUsed} kWh</TableCell>
+                  <TableCell>{formatCurrency(s.cost)}</TableCell>
                   <TableCell>
-                    <div className="flex items-center gap-2">
-                      <div className="w-16 h-2 bg-gray-200 rounded-full overflow-hidden">
-                        <div
-                          className="h-full bg-[#0f766e]"
-                          style={{ width: `${session.soc}%` }}
-                        />
-                      </div>
-                      <span className="text-sm">{session.soc}%</span>
-                    </div>
-                  </TableCell>
-                  <TableCell>{session.kWh} kWh</TableCell>
-                  <TableCell>{formatCurrency(session.cost)}</TableCell>
-                  <TableCell>
-                    <Button
-                      size="sm"
-                      variant="destructive"
-                      onClick={() => handleStopSession(session.id)}
-                    >
-                      <StopCircle className="h-4 w-4" />
-                    </Button>
+                    {s.status === "ACTIVE" || s.status === "CHARGING" ? (
+                      <Button
+                        size="sm"
+                        variant="destructive"
+                        onClick={() => handleToggleSession(s)}
+                      >
+                        Stop
+                      </Button>
+                    ) : null}
                   </TableCell>
                 </TableRow>
               ))}

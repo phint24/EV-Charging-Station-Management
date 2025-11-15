@@ -19,4 +19,5 @@ public interface ChargeSessionRepository extends JpaRepository<ChargeSession, Lo
             LocalDateTime start,
             LocalDateTime end
     );
+
 }
