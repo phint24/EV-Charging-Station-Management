@@ -8,6 +8,7 @@ import project.code.services.ChargeSessionService;
 import project.code.dto.session.ChargeSessionDto;
 import project.code.dto.session.CreateChargeSessionRequest;
 import project.code.dto.session.StopChargeSessionRequest;
+import project.code.model.ChargeSession;
 import jakarta.validation.Valid;
 
 import java.util.List;
@@ -62,4 +63,5 @@ public class ChargeSessionController {
             return ResponseEntity.status(404).body(e.getMessage());
         }
     }
+
 }
