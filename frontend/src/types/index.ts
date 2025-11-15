@@ -2,6 +2,7 @@ export type ConnectorType = 'CCS' | 'CHADEMO' | 'AC_TYPE_2' | 'AC_TYPE_1';
 export type SessionStatus = 'PENDING' | 'ACTIVE' | 'COMPLETED' | 'FAILED';
 export type ChargingPointStatus = 'AVAILABLE' | 'CHARGING' | 'RESERVED' | 'OFFLINE' | 'FAULTED';
 export type PaymentType = 'CREDIT_CARD' | 'E_WALLET' | 'BANK_TRANSFER' | 'CASH';
+export type BookingStatus = 'PENDING' | 'CONFIRMED' | 'COMPLETED' | 'CANCELLED';
 
 export interface AuthResponse {
     token: string;
@@ -149,7 +150,7 @@ export interface BookingDto {
     stationName: string;
     startTime: string;
     endTime: string;
-    status: 'PENDING' | 'CONFIRMED' | 'COMPLETED' | 'CANCELLED';
+    status: BookingStatus;
 }
 
 export interface CreateBookingRequest {
