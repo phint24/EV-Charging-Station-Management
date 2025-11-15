@@ -5,6 +5,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 import project.code.model.Booking;
 import project.code.model.ChargingPoint;
+import project.code.model.ChargingStation;
 import project.code.model.EVDriver;
 import project.code.model.enums.BookingStatus;
 
@@ -21,4 +22,6 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
             "AND b.status IN ('PENDING', 'CONFIRMED') " +
             "AND b.startTime < :endTime AND b.endTime > :startTime")
     boolean existsOverlappingBooking(ChargingPoint point, LocalDateTime startTime, LocalDateTime endTime);
+
+    List<Booking> findByChargingPoint_Station(ChargingStation station);
 }
