@@ -272,13 +272,15 @@ export function StaffDashboard({ onNavigate }: StaffDashboardProps) {
                   <TableCell>{s.energyUsed} kWh</TableCell>
                   <TableCell>{formatCurrency(s.cost)}</TableCell>
                   <TableCell>
-                    <Button
-                      size="sm"
-                      variant={s.status === "ACTIVE" ? "destructive" : "default"}
-                      onClick={() => handleToggleSession(s)}
-                    >
-                      {s.status === "ACTIVE" ? "Stop" : "Start"}
-                    </Button>
+                    {s.status === "ACTIVE" || s.status === "CHARGING" ? (
+                      <Button
+                        size="sm"
+                        variant="destructive"
+                        onClick={() => handleToggleSession(s)}
+                      >
+                        Stop
+                      </Button>
+                    ) : null}
                   </TableCell>
                 </TableRow>
               ))}
