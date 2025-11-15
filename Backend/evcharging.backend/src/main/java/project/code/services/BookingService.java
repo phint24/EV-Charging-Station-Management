@@ -22,12 +22,11 @@ public class BookingService {
     private final BookingRepository bookingRepository;
     private final ChargingPointRepository pointRepository;
     private final EVDriverRepository driverRepository;
+    private final CSStaffRepository csStaffRepository;
 
     @Transactional
     public BookingDto createBooking(User currentUser, CreateBookingRequest request) {
-        EVDriver driver = driverRepository.findByUserAccount(currentUser)
-                .orElseThrow(() -> new EntityNotFoundException("Driver profile not found"));
-
+        EVDriver driver = findDriverProfileByUser(currentUser);
         ChargingPoint point = pointRepository.findById(request.chargingPointId())
                 .orElseThrow(() -> new EntityNotFoundException("Charging Point not found"));
 
@@ -53,7 +52,7 @@ public class BookingService {
 
     @Transactional(readOnly = true)
     public List<BookingDto> getMyBookings(User currentUser) {
-        EVDriver driver = driverRepository.findByUserAccount(currentUser).orElseThrow();
+        EVDriver driver = findDriverProfileByUser(currentUser);
         return bookingRepository.findByDriver(driver).stream()
                 .map(this::mapToDto)
                 .collect(Collectors.toList());
@@ -61,11 +60,8 @@ public class BookingService {
 
     @Transactional
     public BookingDto cancelBooking(User currentUser, Long bookingId) {
-        EVDriver driver = driverRepository.findByUserAccount(currentUser)
-                .orElseThrow(() -> new EntityNotFoundException("Driver profile not found"));
-
-        Booking booking = bookingRepository.findById(bookingId)
-                .orElseThrow(() -> new EntityNotFoundException("Không tìm thấy lịch đặt chỗ ID: " + bookingId));
+        EVDriver driver = findDriverProfileByUser(currentUser);
+        Booking booking = findBookingByIdOrThrow(bookingId);
 
         if (!booking.getDriver().getId().equals(driver.getId())) {
             throw new AccessDeniedException("Bạn không có quyền hủy lịch đặt chỗ này.");
@@ -77,6 +73,67 @@ public class BookingService {
 
         booking.setStatus(BookingStatus.CANCELLED);
         return mapToDto(bookingRepository.save(booking));
+    }
+
+    @Transactional(readOnly = true)
+    public List<BookingDto> getAllBookingsForStation(User currentUser) {
+        CSStaff staff = findStaffProfileByUser(currentUser);
+        ChargingStation station = staff.getStationAssigned();
+
+        return bookingRepository.findByChargingPoint_Station(station).stream()
+                .map(this::mapToDto)
+                .collect(Collectors.toList());
+    }
+
+    @Transactional
+    public BookingDto updateBookingStatus(User currentUser, Long bookingId, BookingStatus newStatus) {
+        CSStaff staff = findStaffProfileByUser(currentUser);
+        Booking booking = findBookingByIdOrThrow(bookingId);
+
+        checkStaffPermission(staff, booking);
+
+        BookingStatus oldStatus = booking.getStatus();
+        if (newStatus == BookingStatus.CONFIRMED && oldStatus != BookingStatus.PENDING) {
+            throw new IllegalStateException("Chỉ có thể CONFIRM các booking đang PENDING.");
+        }
+        if (newStatus == BookingStatus.COMPLETED && oldStatus != BookingStatus.CONFIRMED) {
+            throw new IllegalStateException("Chỉ có thể COMPLETE các booking đang CONFIRMED.");
+        }
+        if (newStatus == BookingStatus.CANCELLED || newStatus == BookingStatus.PENDING) {
+            throw new AccessDeniedException("Nhân viên không có quyền Hủy hoặc Đặt lại booking.");
+        }
+
+        booking.setStatus(newStatus);
+        return mapToDto(bookingRepository.save(booking));
+    }
+
+    // --- HÀM HELPER ---
+    private EVDriver findDriverProfileByUser(User user) {
+        return driverRepository.findByUserAccount(user)
+                .orElseThrow(() -> new EntityNotFoundException("Không tìm thấy hồ sơ EVDriver cho người dùng: " + user.getEmail()));
+    }
+
+    private CSStaff findStaffProfileByUser(User user) {
+        return csStaffRepository.findByUserAccount(user)
+                .orElseThrow(() -> new EntityNotFoundException("Không tìm thấy hồ sơ CSStaff cho người dùng: " + user.getEmail()));
+    }
+
+    private Booking findBookingByIdOrThrow(Long bookingId) {
+        return bookingRepository.findById(bookingId)
+                .orElseThrow(() -> new EntityNotFoundException("Không tìm thấy lịch đặt chỗ ID: " + bookingId));
+    }
+
+    private void checkStaffPermission(CSStaff staff, Booking booking) {
+        if (booking.getChargingPoint().getStation() == null ||
+                staff.getStationAssigned() == null) {
+            throw new IllegalStateException("Dữ liệu trạm sạc bị lỗi (null).");
+        }
+
+        if (!booking.getChargingPoint().getStation().getStationId().equals(
+                staff.getStationAssigned().getStationId()
+        )) {
+            throw new AccessDeniedException("Bạn không có quyền trên booking tại trạm này.");
+        }
     }
 
     private BookingDto mapToDto(Booking b) {

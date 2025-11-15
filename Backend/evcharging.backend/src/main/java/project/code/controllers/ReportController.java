@@ -17,7 +17,7 @@ import java.util.Optional;
 @RestController
 @RequestMapping("/api/reports")
 @RequiredArgsConstructor
-@PreAuthorize("hasRole('ROLE_ADMIN')")
+@PreAuthorize("hasRole('ADMIN')")
 public class ReportController {
 
     private final ReportService reportService;
@@ -74,7 +74,7 @@ public class ReportController {
             ReportDto report = reportService.generateReport(request, ReportType.REVENUE);
             return ResponseEntity.status(201).body(report);
         } catch (Exception e) {
-            return ResponseEntity.badRequest().body(null); // Trả về null hoặc DTO lỗi
+            return ResponseEntity.badRequest().body(null);
         }
     }
 
@@ -85,7 +85,7 @@ public class ReportController {
             ReportDto report = reportService.generateReport(request, ReportType.USAGE);
             return ResponseEntity.status(201).body(report);
         } catch (Exception e) {
-            return ResponseEntity.badRequest().body(null); // Trả về null hoặc DTO lỗi
+            return ResponseEntity.badRequest().body(null);
         }
     }
 

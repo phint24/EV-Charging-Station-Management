@@ -1,7 +1,11 @@
 package project.code.repository;
+
 import org.springframework.data.jpa.repository.JpaRepository;
 import project.code.model.CSStaff;
+import project.code.model.User;
 
-public interface CSStaffRepository extends JpaRepository<CSStaff,Long> {
+import java.util.Optional;
 
+public interface CSStaffRepository extends JpaRepository<CSStaff, Long> {
+    Optional<CSStaff> findByUserAccount(User user);
 }

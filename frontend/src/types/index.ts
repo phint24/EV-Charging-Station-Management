@@ -157,3 +157,18 @@ export interface CreateBookingRequest {
     startTime: string;
     endTime: string;
 }
+
+export interface CreateCSStaffRequest {
+    email: string;
+    name: string;
+    password: string;
+    phoneNumber: string;
+    stationId: number;
+}
+
+export interface CSStaffResponseDto {
+    id: number;
+    userAccount: UserSummaryDto;
+    phoneNumber: string;
+    stationId: number;
+}
