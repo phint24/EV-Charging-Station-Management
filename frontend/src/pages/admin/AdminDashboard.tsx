@@ -13,7 +13,7 @@ import {
     TableRow,
 } from '../../components/ui/table';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line } from 'recharts';
-import { TrendingUp, Users, MapPin, DollarSign, Zap, AlertCircle, Download, Plus, UserPlus } from 'lucide-react';
+import { TrendingUp, Users, MapPin, DollarSign, Zap, AlertCircle, Download, Plus, UserPlus, Edit, Trash2 } from 'lucide-react';
 import { revenueByStation, utilizationByHour } from '../../data/sample';
 import { toast } from 'sonner';
 import { exportRevenueReport } from '../../services/ReportAPI';
@@ -23,6 +23,9 @@ import { ChargingStationDto, UserSummaryDto } from '../../types';
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "../../components/ui/select";
 import { AddChargingPointModal } from '../../components/station/AddChargingPointModal';
 import { AddCSStaffModal } from '../../components/csstaff/AddCSStaffModal';
+import { apiDeleteCSStaff } from '../../services/CSStaffAPI';
+import { apiGetAllSessions } from '../../services/ChargeSessionAPI';
+import { ChargeSessionDto } from '../../types';
 
 interface AdminDashboardProps {
     onNavigate: (path: string) => void;
@@ -34,8 +37,6 @@ interface Station {
     location: string;
     ports: number;
     status: 'active' | 'maintenance' | 'offline';
-    description?: string;
-    operatingHours?: string;
 }
 
 enum FrontendStationStatus {
@@ -43,7 +44,6 @@ enum FrontendStationStatus {
     MAINTENANCE = 'maintenance',
     OFFLINE = 'offline'
 }
-
 type BackendStationStatus = 'AVAILABLE' | 'IN_USE' | 'OFFLINE' | 'FAULTED';
 
 export function AdminDashboard({ onNavigate }: AdminDashboardProps) {
@@ -60,7 +60,10 @@ export function AdminDashboard({ onNavigate }: AdminDashboardProps) {
     const [isLoading, setIsLoading] = useState(true);
 
     const [isAddStaffModalOpen, setIsAddStaffModalOpen] = useState(false);
-    const [allStationsDto, setAllStationsDto] = useState<ChargingStationDto[]>([]); // (Cần DTO gốc cho Modal)
+    const [isEditStaffModalOpen, setIsEditStaffModalOpen] = useState(false);
+    const [editingStaff, setEditingStaff] = useState<UserSummaryDto | null>(null);
+    const [allStationsDto, setAllStationsDto] = useState<ChargingStationDto[]>([]);
+    const [sessions, setSessions] = useState<ChargeSessionDto[]>([]);
 
     const mapFrontendToBackendStatus = (status: FrontendStationStatus): BackendStationStatus => {
         switch (status) {
@@ -85,9 +88,10 @@ export function AdminDashboard({ onNavigate }: AdminDashboardProps) {
     const fetchData = async () => {
         setIsLoading(true);
         try {
-            const [stationsData, usersData] = await Promise.all([
+            const [stationsData, usersData, sessionsData] = await Promise.all([
                 apiGetAllStations(),
-                apiGetAllUsers()
+                apiGetAllUsers(),
+                apiGetAllSessions()
             ]);
 
             setAllStationsDto(stationsData);
@@ -101,6 +105,7 @@ export function AdminDashboard({ onNavigate }: AdminDashboardProps) {
             }));
             setStations(mappedStations);
             setUsers(usersData);
+            setSessions(sessionsData);
 
         } catch (err) {
             console.error('Failed to fetch dashboard data', err);
@@ -198,6 +203,16 @@ export function AdminDashboard({ onNavigate }: AdminDashboardProps) {
         fetchData();
     };
 
+    const handleOpenEditStaffModal = (user: UserSummaryDto) => {
+        setEditingStaff(user);
+        setIsEditStaffModalOpen(true);
+    };
+
+    const handleEditStaffSuccess = () => {
+        toast.success('Nhân viên đã được cập nhật!');
+        fetchData();
+    };
+
     const formatCurrency = (amount: number) => {
         return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(amount);
     };
@@ -224,162 +239,21 @@ export function AdminDashboard({ onNavigate }: AdminDashboardProps) {
                     </Button>
                 </div>
             </div>
-            <p className="text-3xl mb-1">{stat.value}</p>
-            <p className="text-sm text-gray-600">{stat.label}</p>
-          </Card>
-        ))}
-      </div>
 
-      {/* Charts Row */}
-      <div className="grid lg:grid-cols-2 gap-6">
-        {/* Revenue by Station */}
-        <Card className="p-6 rounded-2xl">
-          <div className="flex items-center justify-between mb-6">
-            <h2>Revenue by Station</h2>
-            <Badge variant="outline">Last 30 days</Badge>
-          </div>
-          <ResponsiveContainer width="100%" height={300}>
-            <BarChart data={revenueByStation}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-              <XAxis dataKey="station" tick={{ fontSize: 12 }} />
-              <YAxis tick={{ fontSize: 12 }} />
-              <Tooltip
-                formatter={(value: number) => formatCurrency(value)}
-                contentStyle={{ borderRadius: '8px', border: '1px solid #e5e7eb' }}
-              />
-              <Bar dataKey="revenue" fill="#0f766e" radius={[8, 8, 0, 0]} />
-            </BarChart>
-          </ResponsiveContainer>
-        </Card>
-
-        {/* Utilization by Hour */}
-        <Card className="p-6 rounded-2xl">
-          <div className="flex items-center justify-between mb-6">
-            <h2>Utilization by Hour</h2>
-            <Badge variant="outline">Today</Badge>
-          </div>
-          <ResponsiveContainer width="100%" height={300}>
-            <LineChart data={utilizationByHour}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-              <XAxis dataKey="hour" tick={{ fontSize: 12 }} />
-              <YAxis tick={{ fontSize: 12 }} />
-              <Tooltip
-                formatter={(value: number) => `${value}%`}
-                contentStyle={{ borderRadius: '8px', border: '1px solid #e5e7eb' }}
-              />
-              <Line type="monotone" dataKey="utilization" stroke="#0f766e" strokeWidth={3} dot={{ fill: '#0f766e', r: 4 }} />
-            </LineChart>
-          </ResponsiveContainer>
-        </Card>
-      </div>
-
-      <Card className="p-6 rounded-2xl">
-        <div className="flex items-center justify-between mb-4">
-          <h2>Charge Sessions</h2>
-        </div>
-
-        <div className="rounded-2xl border overflow-x-auto">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>ID</TableHead>
-                <TableHead>Cost</TableHead>
-                <TableHead>Energy (kWh)</TableHead>
-                <TableHead>Start Time</TableHead>
-                <TableHead>End Time</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Station</TableHead>
-                <TableHead>Driver</TableHead>
-                <TableHead>Vehicle</TableHead>
-              </TableRow>
-            </TableHeader>
-
-            <TableBody>
-              {sessions.map((s) => (
-                <TableRow key={s.sessionId}>
-                  <TableCell>{s.sessionId}</TableCell>
-                  <TableCell>{s.cost}</TableCell>
-                  <TableCell>{s.energyUsed}</TableCell>
-                  <TableCell>{new Date(s.startTime).toLocaleString()}</TableCell>
-                  <TableCell>{new Date(s.endTime).toLocaleString()}</TableCell>
-                  <TableCell>
-                    <Badge
-                      className={
-                        s.status === "COMPLETED"
-                          ? "bg-green-500"
-                          : s.status === "IN_PROGRESS"
-                          ? "bg-blue-500"
-                          : "bg-red-500"
-                      }
-                    >
-                      {s.status}
-                    </Badge>
-                  </TableCell>
-                  <TableCell>{s.stationId}</TableCell>
-                  <TableCell>{s.driverId}</TableCell>
-                  <TableCell>{s.vehicleId}</TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </div>
-      </Card>
-
-      {/* AI Insights & Alerts */}
-      <div className="grid  gap-6">
-        {/* AI Suggestions */}
-          <Card className="p-6 rounded-2xl w-full max-w-full">
-          <div className="flex items-center justify-between mb-4">
-            <h2>Station List</h2>
-          </div>
-
-          <div className="rounded-2xl border overflow-x-auto w-full">
-            <Table className="min-w-full">
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Name</TableHead>
-                  <TableHead>Location</TableHead>
-                  <TableHead>Ports</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {stations.map((station) => (
-                  <TableRow key={station.id}>
-                    <TableCell>{station.name}</TableCell>
-                    <TableCell>{station.location}</TableCell>
-                    <TableCell>{station.ports}</TableCell>
-                    <TableCell>
-                      <Badge
-                        className={
-                          station.status === 'active'
-                            ? 'bg-green-500'
-                            : station.status === 'maintenance'
-                            ? 'bg-yellow-500'
-                            : 'bg-red-500'
-                        }
-                      >
-                        {station.status}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        onClick={() => handleView(station)}
-                      >
-                        View
-                      </Button>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => handleEditStatus(station)}
-                        >
-                          Edit
-                        </Button>
-                    </TableCell>
-                  </TableRow>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                {stats.map((stat) => (
+                    <Card key={stat.label} className="p-6 rounded-2xl">
+                        <div className="flex items-center justify-between mb-4">
+                            <div className={`flex h-12 w-12 items-center justify-center rounded-xl ${stat.bgColor} ${stat.color}`}>
+                                {stat.icon}
+                            </div>
+                            <Badge variant={stat.trend === 'up' ? 'default' : 'destructive'} className={stat.trend === 'up' ? 'bg-green-500' : ''}>
+                                {stat.change}
+                            </Badge>
+                        </div>
+                        <p className="text-3xl mb-1">{stat.value}</p>
+                        <p className="text-sm text-gray-600">{stat.label}</p>
+                    </Card>
                 ))}
             </div>
 
@@ -422,6 +296,56 @@ export function AdminDashboard({ onNavigate }: AdminDashboardProps) {
                     </ResponsiveContainer>
                 </Card>
             </div>
+
+            <Card className="p-6 rounded-2xl">
+                <div className="flex items-center justify-between mb-4">
+                    <h2>Charge Sessions</h2>
+                </div>
+                <div className="rounded-2xl border overflow-x-auto">
+                    <Table>
+                        <TableHeader>
+                            <TableRow>
+                                <TableHead>ID</TableHead>
+                                <TableHead>Cost</TableHead>
+                                <TableHead>Energy (kWh)</TableHead>
+                                <TableHead>Start Time</TableHead>
+                                <TableHead>End Time</TableHead>
+                                <TableHead>Status</TableHead>
+                                <TableHead>Station</TableHead>
+                                <TableHead>Driver</TableHead>
+                                <TableHead>Vehicle</TableHead>
+                            </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                            {sessions.map((s) => (
+                                <TableRow key={s.sessionId}>
+                                    <TableCell>{s.sessionId}</TableCell>
+                                    <TableCell>{formatCurrency(s.cost)}</TableCell>
+                                    <TableCell>{s.energyUsed.toFixed(2)}</TableCell>
+                                    <TableCell>{new Date(s.startTime).toLocaleString('vi-VN')}</TableCell>
+                                    <TableCell>{s.endTime ? new Date(s.endTime).toLocaleString('vi-VN') : 'N/A'}</TableCell>
+                                    <TableCell>
+                                        <Badge
+                                            className={
+                                                s.status === "COMPLETED"
+                                                    ? "bg-green-500"
+                                                    : s.status === "ACTIVE"
+                                                        ? "bg-blue-500"
+                                                        : "bg-red-500"
+                                            }
+                                        >
+                                            {s.status}
+                                        </Badge>
+                                    </TableCell>
+                                    <TableCell>{s.stationId}</TableCell>
+                                    <TableCell>{s.driverId}</TableCell>
+                                    <TableCell>{s.vehicleId}</TableCell>
+                                </TableRow>
+                            ))}
+                        </TableBody>
+                    </Table>
+                </div>
+            </Card>
 
             <div className="grid gap-6">
                 <Card className="p-6 rounded-2xl w-full max-w-full">
@@ -537,8 +461,57 @@ export function AdminDashboard({ onNavigate }: AdminDashboardProps) {
 
             <Card className="p-6 rounded-2xl">
                 <div className="flex items-center justify-between mb-4">
+                    <h2>Recent Stations</h2>
+                    <Button variant="outline" onClick={() => onNavigate('/admin/stations')}>
+                        View All
+                    </Button>
+                </div>
+                <div className="rounded-2xl border overflow-hidden">
+                    <Table>
+                        <TableHeader>
+                            <TableRow>
+                                <TableHead>Tên trạm</TableHead>
+                                <TableHead>Vị trí</TableHead>
+                                <TableHead>Trạng thái</TableHead>
+                                <TableHead>Cổng sạc</TableHead>
+                                <TableHead>Thao tác</TableHead>
+                            </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                            {stations.slice(0, 5).map((station) => (
+                                <TableRow key={station.id}>
+                                    <TableCell className="font-medium">{station.name}</TableCell>
+                                    <TableCell>{station.location}</TableCell>
+                                    <TableCell>
+                                        <Badge className={station.status === 'active' ? 'bg-green-500' : 'bg-gray-500'}>
+                                            {station.status === 'active' ? 'Hoạt động' : 'Offline'}
+                                        </Badge>
+                                    </TableCell>
+                                    <TableCell>
+                                        {station.ports}
+                                    </TableCell>
+                                    <TableCell>
+                                        <div className="flex gap-2">
+                                            <Button
+                                                size="sm"
+                                                variant="ghost"
+                                                onClick={() => handleAddChargingPoint(station.id, station.name)}
+                                            >
+                                                <Zap className="mr-1 h-4 w-4" />
+                                                Thêm điểm sạc
+                                            </Button>
+                                        </div>
+                                    </TableCell>
+                                </TableRow>
+                            ))}
+                        </TableBody>
+                    </Table>
+                </div>
+            </Card>
+
+            <Card className="p-6 rounded-2xl">
+                <div className="flex items-center justify-between mb-4">
                     <h2>Information Account</h2>
-                    {/* (4) SỬA LỖI: Thay đổi nút "View All" */}
                     <Button variant="outline" onClick={() => setIsAddStaffModalOpen(true)}>
                         <UserPlus className="mr-2 h-4 w-4" />
                         Thêm Nhân viên
@@ -552,6 +525,7 @@ export function AdminDashboard({ onNavigate }: AdminDashboardProps) {
                                 <TableHead>Email</TableHead>
                                 <TableHead>Role</TableHead>
                                 <TableHead>Status</TableHead>
+                                <TableHead>Actions</TableHead>
                             </TableRow>
                         </TableHeader>
                         <TableBody>
@@ -566,6 +540,29 @@ export function AdminDashboard({ onNavigate }: AdminDashboardProps) {
                                     </TableCell>
                                     <TableCell>
                                         <Badge className="bg-green-500">active</Badge>
+                                    </TableCell>
+                                    <TableCell>
+                                        {(user.role === 'ROLE_CSSTAFF' || user.role === 'ROLE_ADMIN') && (
+                                            <div className="flex gap-1">
+                                                <Button
+                                                    size="sm"
+                                                    variant="ghost"
+                                                    // onClick={}
+                                                    // disabled={}
+                                                >
+                                                    <Edit className="h-4 w-4" />
+                                                </Button>
+                                                <Button
+                                                    size="sm"
+                                                    variant="ghost"
+                                                    // onClick={}
+                                                    // disabled={}
+                                                    className="text-red-500 hover:text-red-600"
+                                                >
+                                                    <Trash2 className="h-4 w-4" />
+                                                </Button>
+                                            </div>
+                                        )}
                                     </TableCell>
                                 </TableRow>
                             ))}
@@ -592,6 +589,7 @@ export function AdminDashboard({ onNavigate }: AdminDashboardProps) {
                 onSuccess={handleAddStaffSuccess}
                 stations={allStationsDto}
             />
+
         </div>
     );
 }

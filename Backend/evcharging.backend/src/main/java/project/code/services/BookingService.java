@@ -42,6 +42,7 @@ public class BookingService {
         Booking booking = Booking.builder()
                 .driver(driver)
                 .chargingPoint(point)
+                .station(point.getStation())
                 .startTime(request.startTime())
                 .endTime(request.endTime())
                 .status(BookingStatus.PENDING)
@@ -107,7 +108,6 @@ public class BookingService {
         return mapToDto(bookingRepository.save(booking));
     }
 
-    // --- HÀM HELPER ---
     private EVDriver findDriverProfileByUser(User user) {
         return driverRepository.findByUserAccount(user)
                 .orElseThrow(() -> new EntityNotFoundException("Không tìm thấy hồ sơ EVDriver cho người dùng: " + user.getEmail()));
@@ -141,7 +141,7 @@ public class BookingService {
                 b.getId(),
                 b.getDriver().getId(),
                 b.getChargingPoint().getChargingPointId(),
-                b.getChargingPoint().getStation().getName(),
+                b.getStation().getName(),
                 b.getStartTime(),
                 b.getEndTime(),
                 b.getStatus()

@@ -8,3 +8,8 @@ export const apiCreateCSStaff = async (data: CreateCSStaffRequest): Promise<CSSt
     const response = await API.post('/csstaffs', data);
     return response.data;
 };
+
+export const apiDeleteCSStaff = async (data: CreateCSStaffRequest): Promise<CSStaffResponseDto> => {
+    const response = await API.post('/csstaffs', data);
+    return response.data;
+};

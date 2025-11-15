@@ -16,7 +16,7 @@ interface AddCSStaffModalProps {
     isOpen: boolean;
     onClose: () => void;
     onSuccess: (newStaff: any) => void;
-    stations: ChargingStationDto[]; // (Nhận danh sách trạm sạc từ Dashboard)
+    stations: ChargingStationDto[];
 }
 
 export function AddCSStaffModal({ isOpen, onClose, onSuccess, stations }: AddCSStaffModalProps) {
@@ -26,7 +26,7 @@ export function AddCSStaffModal({ isOpen, onClose, onSuccess, stations }: AddCSS
         email: '',
         password: '',
         phoneNumber: '',
-        stationId: '' // (Lưu ID trạm sạc dưới dạng string cho Select)
+        stationId: ''
     });
     const [isLoading, setIsLoading] = useState(false);
     const [errors, setErrors] = useState<Record<string, string>>({});
