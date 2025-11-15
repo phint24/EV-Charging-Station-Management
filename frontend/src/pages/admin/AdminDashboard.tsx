@@ -3,6 +3,7 @@ import { Card } from '../../components/ui/card';
 import { Badge } from '../../components/ui/badge';
 import { Button } from '../../components/ui/button';
 import "../../styles/globals.css"
+import { apiGetAllSessions } from '../../services/ChargeSessionAPI'
 import { apiGetAllUsers, UserDto } from '../../services/UserAPI';
 import {
   Table,
@@ -22,8 +23,6 @@ import { apiGetAllStations, apiUpdateStation, UpdateStationRequest } from '../..
 import { ChargingStationDto } from '../../types';
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "../../components/ui/select";
 
-
-
 interface AdminDashboardProps {
   onNavigate: (path: string) => void;
 }
@@ -38,6 +37,18 @@ interface Station {
 }
 
 export function AdminDashboard({ onNavigate }: AdminDashboardProps) {
+  const [users, setUsers] = useState<UserDto[]>([]);
+  useEffect(() => {
+      const fetchUsers = async () => {
+        try {
+          const data = await apiGetAllUsers();
+          setUsers(data);
+        } catch (err) {
+          console.error('Failed to fetch users', err);
+        }
+      };
+      fetchUsers();
+    }, []);
   const [isAddStationModalOpen, setIsAddStationModalOpen] = useState(false); 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedStation, setSelectedStation] = useState<Station | null>(null);
@@ -84,6 +95,20 @@ useEffect(() => {
     }
   };
     fetchStations();
+  }, []);
+
+  const [sessions, setSessions] = useState<ChargeSessionDto[]>([]);
+  useEffect(() => {
+    const fetchSessions = async () => {
+      try {
+        const data = await apiGetAllSessions();
+        setSessions(data);
+      } catch (err) {
+        console.error("Failed to fetch sessions:", err);
+      }
+    };
+
+    fetchSessions();
   }, []);
 
   const handleSaveStatus = async () => {
@@ -294,6 +319,58 @@ const handleAddStationSuccess = () => {
           </ResponsiveContainer>
         </Card>
       </div>
+
+      <Card className="p-6 rounded-2xl">
+        <div className="flex items-center justify-between mb-4">
+          <h2>Charge Sessions</h2>
+        </div>
+
+        <div className="rounded-2xl border overflow-x-auto">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>ID</TableHead>
+                <TableHead>Cost</TableHead>
+                <TableHead>Energy (kWh)</TableHead>
+                <TableHead>Start Time</TableHead>
+                <TableHead>End Time</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead>Station</TableHead>
+                <TableHead>Driver</TableHead>
+                <TableHead>Vehicle</TableHead>
+              </TableRow>
+            </TableHeader>
+
+            <TableBody>
+              {sessions.map((s) => (
+                <TableRow key={s.sessionId}>
+                  <TableCell>{s.sessionId}</TableCell>
+                  <TableCell>{s.cost}</TableCell>
+                  <TableCell>{s.energyUsed}</TableCell>
+                  <TableCell>{new Date(s.startTime).toLocaleString()}</TableCell>
+                  <TableCell>{new Date(s.endTime).toLocaleString()}</TableCell>
+                  <TableCell>
+                    <Badge
+                      className={
+                        s.status === "COMPLETED"
+                          ? "bg-green-500"
+                          : s.status === "IN_PROGRESS"
+                          ? "bg-blue-500"
+                          : "bg-red-500"
+                      }
+                    >
+                      {s.status}
+                    </Badge>
+                  </TableCell>
+                  <TableCell>{s.stationId}</TableCell>
+                  <TableCell>{s.driverId}</TableCell>
+                  <TableCell>{s.vehicleId}</TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </div>
+      </Card>
 
       {/* AI Insights & Alerts */}
       <div className="grid  gap-6">
