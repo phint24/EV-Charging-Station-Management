@@ -224,21 +224,162 @@ export function AdminDashboard({ onNavigate }: AdminDashboardProps) {
                     </Button>
                 </div>
             </div>
+            <p className="text-3xl mb-1">{stat.value}</p>
+            <p className="text-sm text-gray-600">{stat.label}</p>
+          </Card>
+        ))}
+      </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-                {stats.map((stat) => (
-                    <Card key={stat.label} className="p-6 rounded-2xl">
-                        <div className="flex items-center justify-between mb-4">
-                            <div className={`flex h-12 w-12 items-center justify-center rounded-xl ${stat.bgColor} ${stat.color}`}>
-                                {stat.icon}
-                            </div>
-                            <Badge variant={stat.trend === 'up' ? 'default' : 'destructive'} className={stat.trend === 'up' ? 'bg-green-500' : ''}>
-                                {stat.change}
-                            </Badge>
-                        </div>
-                        <p className="text-3xl mb-1">{stat.value}</p>
-                        <p className="text-sm text-gray-600">{stat.label}</p>
-                    </Card>
+      {/* Charts Row */}
+      <div className="grid lg:grid-cols-2 gap-6">
+        {/* Revenue by Station */}
+        <Card className="p-6 rounded-2xl">
+          <div className="flex items-center justify-between mb-6">
+            <h2>Revenue by Station</h2>
+            <Badge variant="outline">Last 30 days</Badge>
+          </div>
+          <ResponsiveContainer width="100%" height={300}>
+            <BarChart data={revenueByStation}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+              <XAxis dataKey="station" tick={{ fontSize: 12 }} />
+              <YAxis tick={{ fontSize: 12 }} />
+              <Tooltip
+                formatter={(value: number) => formatCurrency(value)}
+                contentStyle={{ borderRadius: '8px', border: '1px solid #e5e7eb' }}
+              />
+              <Bar dataKey="revenue" fill="#0f766e" radius={[8, 8, 0, 0]} />
+            </BarChart>
+          </ResponsiveContainer>
+        </Card>
+
+        {/* Utilization by Hour */}
+        <Card className="p-6 rounded-2xl">
+          <div className="flex items-center justify-between mb-6">
+            <h2>Utilization by Hour</h2>
+            <Badge variant="outline">Today</Badge>
+          </div>
+          <ResponsiveContainer width="100%" height={300}>
+            <LineChart data={utilizationByHour}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+              <XAxis dataKey="hour" tick={{ fontSize: 12 }} />
+              <YAxis tick={{ fontSize: 12 }} />
+              <Tooltip
+                formatter={(value: number) => `${value}%`}
+                contentStyle={{ borderRadius: '8px', border: '1px solid #e5e7eb' }}
+              />
+              <Line type="monotone" dataKey="utilization" stroke="#0f766e" strokeWidth={3} dot={{ fill: '#0f766e', r: 4 }} />
+            </LineChart>
+          </ResponsiveContainer>
+        </Card>
+      </div>
+
+      <Card className="p-6 rounded-2xl">
+        <div className="flex items-center justify-between mb-4">
+          <h2>Charge Sessions</h2>
+        </div>
+
+        <div className="rounded-2xl border overflow-x-auto">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>ID</TableHead>
+                <TableHead>Cost</TableHead>
+                <TableHead>Energy (kWh)</TableHead>
+                <TableHead>Start Time</TableHead>
+                <TableHead>End Time</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead>Station</TableHead>
+                <TableHead>Driver</TableHead>
+                <TableHead>Vehicle</TableHead>
+              </TableRow>
+            </TableHeader>
+
+            <TableBody>
+              {sessions.map((s) => (
+                <TableRow key={s.sessionId}>
+                  <TableCell>{s.sessionId}</TableCell>
+                  <TableCell>{s.cost}</TableCell>
+                  <TableCell>{s.energyUsed}</TableCell>
+                  <TableCell>{new Date(s.startTime).toLocaleString()}</TableCell>
+                  <TableCell>{new Date(s.endTime).toLocaleString()}</TableCell>
+                  <TableCell>
+                    <Badge
+                      className={
+                        s.status === "COMPLETED"
+                          ? "bg-green-500"
+                          : s.status === "IN_PROGRESS"
+                          ? "bg-blue-500"
+                          : "bg-red-500"
+                      }
+                    >
+                      {s.status}
+                    </Badge>
+                  </TableCell>
+                  <TableCell>{s.stationId}</TableCell>
+                  <TableCell>{s.driverId}</TableCell>
+                  <TableCell>{s.vehicleId}</TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </div>
+      </Card>
+
+      {/* AI Insights & Alerts */}
+      <div className="grid  gap-6">
+        {/* AI Suggestions */}
+          <Card className="p-6 rounded-2xl w-full max-w-full">
+          <div className="flex items-center justify-between mb-4">
+            <h2>Station List</h2>
+          </div>
+
+          <div className="rounded-2xl border overflow-x-auto w-full">
+            <Table className="min-w-full">
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Name</TableHead>
+                  <TableHead>Location</TableHead>
+                  <TableHead>Ports</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead>Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {stations.map((station) => (
+                  <TableRow key={station.id}>
+                    <TableCell>{station.name}</TableCell>
+                    <TableCell>{station.location}</TableCell>
+                    <TableCell>{station.ports}</TableCell>
+                    <TableCell>
+                      <Badge
+                        className={
+                          station.status === 'active'
+                            ? 'bg-green-500'
+                            : station.status === 'maintenance'
+                            ? 'bg-yellow-500'
+                            : 'bg-red-500'
+                        }
+                      >
+                        {station.status}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => handleView(station)}
+                      >
+                        View
+                      </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => handleEditStatus(station)}
+                        >
+                          Edit
+                        </Button>
+                    </TableCell>
+                  </TableRow>
                 ))}
             </div>
 
