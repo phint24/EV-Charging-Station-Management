@@ -43,6 +43,9 @@ import {
     BookingDto
 } from '../../types';
 
+import { ChatbotPanel } from '../../components/chatbot/ChatbotPanel';
+import { apiSendChatMessage, apiClearChatHistory } from '../../services/ChatbotAPI';
+
 interface DriverDashboardProps {
     onNavigate: (path: string) => void;
     isWalletDialogOpen?: boolean;
@@ -132,6 +135,7 @@ export function DriverDashboard({ onNavigate, isWalletDialogOpen, onWalletDialog
     const [isAddMethodModalOpen, setIsAddMethodModalOpen] = useState(false);
     const [paymentMethods, setPaymentMethods] = useState<PaymentMethodDto[]>([]);
     const [bookings, setBookings] = useState<BookingDto[]>([]);
+    const [isChatbotOpen, setIsChatbotOpen] = useState(false);
 
     const loadDashboardData = async () => {
         console.log("Đang tải dữ liệu dashboard...");
@@ -174,6 +178,26 @@ export function DriverDashboard({ onNavigate, isWalletDialogOpen, onWalletDialog
     useEffect(() => {
         loadDashboardData();
     }, []);
+
+    const handleSendChatMessage = async (message: string): Promise<string> => {
+    try {
+        const response = await apiSendChatMessage(message);
+        return response.response;
+      } catch (error) {
+        console.error('Error sending chat message:', error);
+        throw error;
+      }
+    };
+
+    const handleClearChatHistory = async () => {
+    try {
+        await apiClearChatHistory();
+        toast.success('Đã xóa lịch sử chat');
+      } catch (error) {
+        console.error('Error clearing chat history:', error);
+        toast.error('Không thể xóa lịch sử chat');
+      }
+   };
 
     const handleStationClick = (stationId: number) => {
         onNavigate(`/driver/station/${stationId}`);
@@ -471,6 +495,13 @@ export function DriverDashboard({ onNavigate, isWalletDialogOpen, onWalletDialog
                 onClose={() => setIsAddMethodModalOpen(false)}
                 onSuccess={handlePaymentMethodChange}
                 driverId={driverProfile.id}
+            />
+
+            <ChatbotPanel
+                onSendMessage={handleSendChatMessage}
+                onClearHistory={handleClearChatHistory}
+                isOpen={isChatbotOpen}
+                onToggle={() => setIsChatbotOpen(!isChatbotOpen)}
             />
         </div>
     );
