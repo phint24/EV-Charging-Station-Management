@@ -8,7 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '.
 import { toast } from 'sonner';
 import axios from 'axios';
 
-import { apiAddVehicle } from '../../services/DriverAPI';
+import { apiAddVehicle } from '../../api/DriverAPI';
 import { CreateVehicleRequest, ConnectorType, VehicleDto } from '../../types';
 
 

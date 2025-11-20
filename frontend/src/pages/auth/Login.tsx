@@ -7,8 +7,8 @@ import { Card } from '../../components/ui/card';
 import { toast } from 'sonner';
 import "../../styles/globals.css";
 
-import { apiLogin } from '../../services/AuthAPI';
-import { setAuthToken } from '../../services/api';
+import { apiLogin } from '../../api/AuthAPI';
+import { setAuthToken } from '../../api/api';
 import { AuthResponse } from '../../types';
 
 import axios from 'axios';

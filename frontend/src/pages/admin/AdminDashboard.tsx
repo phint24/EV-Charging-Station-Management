@@ -3,7 +3,7 @@ import { Card } from '../../components/ui/card';
 import { Badge } from '../../components/ui/badge';
 import { Button } from '../../components/ui/button';
 import "../../styles/globals.css"
-import { apiGetAllUsers } from '../../services/UserAPI';
+import { apiGetAllUsers } from '../../api/UserAPI';
 import {
     Table,
     TableBody,
@@ -16,16 +16,19 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContaine
 import { TrendingUp, Users, MapPin, DollarSign, Zap, AlertCircle, Download, Plus, UserPlus, Edit, Trash2 } from 'lucide-react';
 import { revenueByStation, utilizationByHour } from '../../data/sample';
 import { toast } from 'sonner';
-import { exportRevenueReport } from '../../services/ReportAPI';
+import { exportRevenueReport } from '../../api/ReportAPI';
 import { AddStationModal } from '../../components/station/AddStationModal';
-import { apiGetAllStations, apiUpdateStation, UpdateStationRequest } from '../../services/StationAPI';
+import { apiGetAllStations, apiUpdateStation, UpdateStationRequest } from '../../api/StationAPI';
 import { ChargingStationDto, UserSummaryDto } from '../../types';
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "../../components/ui/select";
 import { AddChargingPointModal } from '../../components/station/AddChargingPointModal';
 import { AddCSStaffModal } from '../../components/csstaff/AddCSStaffModal';
-import { apiDeleteCSStaff } from '../../services/CSStaffAPI';
-import { apiGetAllSessions } from '../../services/ChargeSessionAPI';
+import { EditCSStaffModal } from '../../components/csstaff/EditCSStaffModal';
+import { apiDeleteCSStaff } from '../../api/CSStaffAPI';
+import { apiDeleteAdmin } from '../../api/AdminAPI';
+import { apiGetAllSessions } from '../../api/ChargeSessionAPI';
 import { ChargeSessionDto } from '../../types';
+import axios from 'axios';
 
 interface AdminDashboardProps {
     onNavigate: (path: string) => void;
@@ -213,6 +216,28 @@ export function AdminDashboard({ onNavigate }: AdminDashboardProps) {
         fetchData();
     };
 
+    const handleDeleteStaff = async (user: UserSummaryDto) => {
+        // (Đã bỏ check profileId)
+        if (window.confirm(`Bạn có chắc chắn muốn xóa tài khoản: ${user.name} (${user.email})?`)) {
+            try {
+                if (user.role === 'ROLE_CSSTAFF') {
+                    await apiDeleteCSStaff(user.id);
+                } else if (user.role === 'ROLE_ADMIN') {
+                    await apiDeleteAdmin(user.id);
+                }
+                toast.success("Đã xóa tài khoản thành công.");
+                fetchData();
+            } catch (error: any) {
+                console.error("Delete failed:", error);
+                let errorMessage = "Không thể xóa tài khoản.";
+                if (axios.isAxiosError(error) && error.response) {
+                    errorMessage = error.response.data?.message || error.response.data || errorMessage;
+                }
+                toast.error(errorMessage);
+            }
+        }
+    };
+
     const formatCurrency = (amount: number) => {
         return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(amount);
     };
@@ -383,18 +408,6 @@ export function AdminDashboard({ onNavigate }: AdminDashboardProps) {
                                             </Badge>
                                         </TableCell>
                                         <TableCell>
-                                        <div className="flex gap-2">
-                                            <Button
-                                                size="sm"
-                                                variant="ghost"
-                                                onClick={() => handleAddChargingPoint(station.id, station.name)}
-                                            >
-                                                <Zap className="mr-1 h-4 w-4" />
-                                                Thêm điểm sạc
-                                            </Button>
-                                        </div>
-                                        </TableCell>
-                                        <TableCell>
                                             <Button
                                                 size="sm"
                                                 variant="ghost"
@@ -471,56 +484,6 @@ export function AdminDashboard({ onNavigate }: AdminDashboardProps) {
                 )}
             </div>
 
-            {/* <Card className="p-6 rounded-2xl">
-                <div className="flex items-center justify-between mb-4">
-                    <h2>Recent Stations</h2>
-                    <Button variant="outline" onClick={() => onNavigate('/admin/stations')}>
-                        View All
-                    </Button>
-                </div>
-                <div className="rounded-2xl border overflow-hidden">
-                    <Table>
-                        <TableHeader>
-                            <TableRow>
-                                <TableHead>Tên trạm</TableHead>
-                                <TableHead>Vị trí</TableHead>
-                                <TableHead>Trạng thái</TableHead>
-                                <TableHead>Cổng sạc</TableHead>
-                                <TableHead>Thao tác</TableHead>
-                            </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                            {stations.slice(0, 5).map((station) => (
-                                <TableRow key={station.id}>
-                                    <TableCell className="font-medium">{station.name}</TableCell>
-                                    <TableCell>{station.location}</TableCell>
-                                    <TableCell>
-                                        <Badge className={station.status === 'active' ? 'bg-green-500' : 'bg-gray-500'}>
-                                            {station.status === 'active' ? 'Hoạt động' : 'Offline'}
-                                        </Badge>
-                                    </TableCell>
-                                    <TableCell>
-                                        {station.ports}
-                                    </TableCell>
-                                    <TableCell>
-                                        <div className="flex gap-2">
-                                            <Button
-                                                size="sm"
-                                                variant="ghost"
-                                                onClick={() => handleAddChargingPoint(station.id, station.name)}
-                                            >
-                                                <Zap className="mr-1 h-4 w-4" />
-                                                Thêm điểm sạc
-                                            </Button>
-                                        </div>
-                                    </TableCell>
-                                </TableRow>
-                            ))}
-                        </TableBody>
-                    </Table>
-                </div>
-            </Card> */}
-
             <Card className="p-6 rounded-2xl">
                 <div className="flex items-center justify-between mb-4">
                     <h2>Information Account</h2>
@@ -559,16 +522,14 @@ export function AdminDashboard({ onNavigate }: AdminDashboardProps) {
                                                 <Button
                                                     size="sm"
                                                     variant="ghost"
-                                                    // onClick={}
-                                                    // disabled={}
+                                                    onClick={() => handleOpenEditStaffModal(user)}
                                                 >
                                                     <Edit className="h-4 w-4" />
                                                 </Button>
                                                 <Button
                                                     size="sm"
                                                     variant="ghost"
-                                                    // onClick={}
-                                                    // disabled={}
+                                                    onClick={() => handleDeleteStaff(user)}
                                                     className="text-red-500 hover:text-red-600"
                                                 >
                                                     <Trash2 className="h-4 w-4" />
@@ -602,6 +563,15 @@ export function AdminDashboard({ onNavigate }: AdminDashboardProps) {
                 stations={allStationsDto}
             />
 
+            {editingStaff && (
+                <EditCSStaffModal
+                    isOpen={isEditStaffModalOpen}
+                    onClose={() => setIsEditStaffModalOpen(false)}
+                    onSuccess={handleEditStaffSuccess}
+                    stations={allStationsDto}
+                    staff={editingStaff}
+                />
+            )}
         </div>
     );
 }

@@ -5,6 +5,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.validation.annotation.Validated;
+import jakarta.persistence.EntityNotFoundException;
 
 import project.code.model.CSStaff;
 import project.code.repository.CSStaffRepository;
@@ -77,25 +78,33 @@ public class CSStaffService {
     }
 
     @Transactional
-    public Optional<CsStaffResponseDto> updateCSStaffProfile(Long staffId, UpdateCSStaffProfileRequest request) {
-        return csStaffRepository.findById(staffId).map(staff -> {
+    public Optional<CsStaffResponseDto> updateCSStaffProfile(Long userId, UpdateCSStaffProfileRequest request) {
 
-            if (request.phoneNumber() != null) {
-                staff.setPhoneNumber(request.phoneNumber());
-            }
+        Optional<CSStaff> staffOpt = csStaffRepository.findByUserAccount_Id(userId);
 
-            if (request.stationId() != null &&
-                    !request.stationId().equals(staff.getStationAssigned().getStationId())) {
+        if (staffOpt.isEmpty()) {
+            return Optional.empty();
+        }
 
-                ChargingStation newStation = stationRepository.findById(request.stationId())
-                        .orElseThrow(() -> new RuntimeException("Không tìm thấy trạm sạc với ID: " + request.stationId()));
-                staff.setStationAssigned(newStation);
-            }
+        CSStaff staff = staffOpt.get();
 
-            CSStaff updatedStaff = csStaffRepository.save(staff);
+        if (request.name() != null && !request.name().isBlank()) {
+            User user = staff.getUserAccount();
+            user.setName(request.name());
+            userRepository.save(user);
+        }
 
-            return mapToCsStaffResponseDto(updatedStaff);
-        });
+        if (request.phoneNumber() != null) {
+            staff.setPhoneNumber(request.phoneNumber());
+        }
+
+        if (request.stationId() != null) {
+            ChargingStation station = stationRepository.findById(request.stationId())
+                    .orElseThrow(() -> new EntityNotFoundException("Không tìm thấy trạm sạc ID: " + request.stationId()));
+            staff.setStationAssigned(station);
+        }
+
+        return Optional.of(mapToDto(csStaffRepository.save(staff)));
     }
 
     @Transactional
@@ -132,6 +141,40 @@ public class CSStaffService {
                 station.getName(),
                 station.getLocation(),
                 station.getStatus()
+        );
+
+        return new CsStaffResponseDto(
+                staff.getId(),
+                userDto,
+                staff.getPhoneNumber(),
+                stationDto
+        );
+    }
+
+    private CsStaffResponseDto mapToDto(CSStaff staff) {
+
+        User user = staff.getUserAccount();
+
+        StationSummaryDto stationDto = null;
+        Long stationId = null;
+
+        if (staff.getStationAssigned() != null) {
+            ChargingStation s = staff.getStationAssigned();
+            stationId = s.getStationId();
+
+            stationDto = new StationSummaryDto(
+                    s.getStationId(),
+                    s.getName(),
+                    s.getLocation(),
+                    s.getStatus()
+            );
+        }
+
+        UserSummaryDto userDto = new UserSummaryDto(
+                user.getId(),
+                user.getName(),
+                user.getEmail(),
+                user.getRole()
         );
 
         return new CsStaffResponseDto(

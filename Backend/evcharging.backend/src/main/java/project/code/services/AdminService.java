@@ -35,14 +35,14 @@ public class AdminService {
     public List<AdminResponseDto> getAllAdminProfiles() {
         return adminRepository.findAll()
                 .stream()
-                .map(this::mapToAdminResponseDto) // Gọi hàm map
+                .map(this::mapToAdminResponseDto)
                 .collect(Collectors.toList());
     }
 
-    @Transactional(readOnly = true) // (4) Thêm Transactional
+    @Transactional(readOnly = true)
     public Optional<AdminResponseDto> getAdminProfileById(Long id) {
         return adminRepository.findById(id)
-                .map(this::mapToAdminResponseDto); // Gọi hàm map
+                .map(this::mapToAdminResponseDto);
     }
 
     @Transactional
@@ -64,23 +64,25 @@ public class AdminService {
     }
 
     @Transactional
-    public boolean deleteAdmin(Long id) {
-        Optional<Admin> adminOpt = adminRepository.findById(id);
+    public boolean deleteAdmin(Long userId) {
+        Optional<Admin> adminOpt = adminRepository.findByUserAccount_Id(userId);
+
         if (adminOpt.isPresent()) {
-            Admin admin = adminOpt.get();
-            User user = admin.getUserAccount();
-            adminRepository.delete(admin);
-            if (user != null) {
-                userRepository.delete(user);
-            }
+
+            adminRepository.delete(adminOpt.get());
             return true;
+        } else {
+            if (userRepository.existsById(userId)) {
+                userRepository.deleteById(userId);
+                return true;
+            }
         }
+
         return false;
     }
 
     private AdminResponseDto mapToAdminResponseDto(Admin admin) {
         User user = admin.getUserAccount();
-        // Cẩn thận: Nếu User cũng lazy-load các collection khác, bạn cần xử lý ở đây
         UserSummaryDto userDto = new UserSummaryDto(
                 user.getId(),
                 user.getName(),
@@ -89,37 +91,4 @@ public class AdminService {
         );
         return new AdminResponseDto(admin.getId(), userDto);
     }
-
-//    public List<StationStatusDto> monitorAllStations() {
-//        List<ChargingStation> stations = stationRepository.findAll();
-//        return stations.stream()
-//                .map(this::convertToStationStatusDto)
-//                .collect(Collectors.toList());
-//    }
-
-//    @Transactional // Nên dùng Transactional cho các hàm cập nhật
-//    public ChargingStation controlStation(Long stationId, StationControlRequest request) { // (5) Đổi ID thành Long
-//
-//        ChargingStation.StationStatus newStatus = request.newStatus();
-//
-//        if (newStatus != ChargingStation.StationStatus.AVAILABLE && newStatus != ChargingStation.StationStatus.OFFLINE) {
-//            throw new IllegalArgumentException("Hành động không hợp lệ. Admin chỉ có thể đặt trạm ở trạng thái AVAILABLE hoặc OFFLINE.");
-//        }
-//
-//        // (5) Sửa lỗi findById - dùng Long
-//        ChargingStation station = stationRepository.findById(stationId)
-//                .orElseThrow(() -> new RuntimeException("Không tìm thấy trạm sạc với ID: " + stationId));
-//
-//        if (station.getStatus() == ChargingStation.StationStatus.IN_USE && newStatus == ChargingStation.StationStatus.AVAILABLE) {
-//            throw new IllegalStateException("Không thể chuyển trạng thái trạm đang được sử dụng (IN_USE) thành AVAILABLE.");
-//        }
-//
-//        station.setStatus(newStatus);
-//        return stationRepository.save(station);
-//    }
-//
-//    private StationStatusDto convertToStationStatusDto(ChargingStation station) {
-//        // (5) Sửa lỗi getId() -> getStationId()
-//        return new StationStatusDto(station.getStationId(), station.getName(), station.getStatus());
-//    }
 }

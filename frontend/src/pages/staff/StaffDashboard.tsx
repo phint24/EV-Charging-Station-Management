@@ -14,9 +14,9 @@ import {
 import { Zap, MapPin, Users, DollarSign, Search, Check, CalendarClock, StopCircle, AlertCircle } from 'lucide-react';
 import { toast } from 'sonner';
 import "../../styles/globals.css";
-import { apiGetBookingsForStation, apiUpdateBookingStatus } from '../../services/CSStaffAPI';
+import { apiGetBookingsForStation, apiUpdateBookingStatus } from '../../api/CSStaffAPI';
 import { BookingDto, BookingStatus } from '../../types';
-import { apiGetAllSessions, apiStopSession, apiStartSession, apiGetActiveSessions , apiResumeSession} from '../../services/sessionAPI';
+import { apiGetAllSessions, apiStopSession, apiStartSession, apiGetActiveSessions , apiResumeSession} from '../../api/sessionAPI';
 import { ChargeSessionDto } from '../../types';
 
 interface StaffDashboardProps {

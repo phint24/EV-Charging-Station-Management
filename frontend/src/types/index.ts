@@ -12,6 +12,9 @@ export interface AuthResponse {
 
 export interface UserSummaryDto {
     id: number;
+    profileId?: number | null;
+    stationId?: number | null;
+    assignedStation?: StationSummaryDto | null;
     name: string;
     email: string;
     role: string;
@@ -171,5 +174,18 @@ export interface CSStaffResponseDto {
     id: number;
     userAccount: UserSummaryDto;
     phoneNumber: string;
+    assignedStation: StationSummaryDto | null;
+}
+
+export interface UpdateCSStaffProfileRequest {
+    name?: string;
+    phoneNumber?: string;
+    stationId?: number;
+}
+
+export interface StationSummaryDto {
     stationId: number;
+    name: string;
+    location: string;
+    status: string;
 }
