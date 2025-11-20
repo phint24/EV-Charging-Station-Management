@@ -81,7 +81,7 @@ public class ChatbotService {
 
     private String callGeminiAPI(List<Map<String, String>> messages, EVDriver driver) {
         try {
-            // ✅ URL đầy đủ với API key trong query param
+            // URL đầy đủ với API key trong query param
             String apiUrl = String.format(
                 "https://generativelanguage.googleapis.com/v1beta/models/%s:generateContent?key=%s",
                 MODEL,
