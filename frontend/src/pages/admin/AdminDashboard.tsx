@@ -423,6 +423,18 @@ export function AdminDashboard({ onNavigate }: AdminDashboardProps) {
                                                 Edit
                                             </Button>
                                         </TableCell>
+                                        <TableCell>
+                                            <div className="flex gap-2">
+                                                <Button
+                                                    size="sm"
+                                                    variant="ghost"
+                                                    onClick={() => handleAddChargingPoint(station.id, station.name)}
+                                                >
+                                                    <Zap className="mr-1 h-4 w-4" />
+                                                    Thêm điểm sạc
+                                                </Button>
+                                            </div>
+                                        </TableCell>
                                     </TableRow>
                                 ))}
                             </TableBody>
