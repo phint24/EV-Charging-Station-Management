@@ -2,6 +2,7 @@ import API from './api';
 import {
     CSStaffResponseDto,
     CreateCSStaffRequest,
+    UpdateCSStaffProfileRequest,
     BookingDto,
     BookingStatus
 } from '../types';
@@ -11,9 +12,13 @@ export const apiCreateCSStaff = async (data: CreateCSStaffRequest): Promise<CSSt
     return response.data;
 };
 
-export const apiDeleteCSStaff = async (data: CreateCSStaffRequest): Promise<CSStaffResponseDto> => {
-    const response = await API.post('/csstaffs', data);
+export const apiUpdateCSStaff = async (staffProfileId: number, data: UpdateCSStaffProfileRequest): Promise<CSStaffResponseDto> => {
+    const response = await API.put(`/csstaffs/${staffProfileId}`, data);
     return response.data;
+};
+
+export const apiDeleteCSStaff = async (staffProfileId: number): Promise<void> => {
+    await API.delete(`/csstaffs/${staffProfileId}`);
 };
 
 export const apiGetBookingsForStation = async (): Promise<BookingDto[]> => {

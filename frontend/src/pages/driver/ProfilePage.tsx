@@ -3,7 +3,7 @@ import { Button } from "../../components/ui/button";
 import { Input } from "../../components/ui/input";
 import { Card } from "../../components/ui/card";
 import { toast } from "sonner";
-import { apiGetDriverProfile, apiUpdateDriverProfile } from "../../services/DriverAPI";
+import { apiGetDriverProfile, apiUpdateDriverProfile } from "../../api/DriverAPI";
 
 export function ProfilePage({ onNavigate }: { onNavigate: (path: string) => void }) {
   const [profile, setProfile] = useState<any>(null);

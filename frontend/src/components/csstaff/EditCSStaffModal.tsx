@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { X, UserPlus } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { UserCog } from 'lucide-react';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import { Label } from '../ui/label';
@@ -8,28 +8,43 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '.
 import { toast } from 'sonner';
 import axios from 'axios';
 
-import { apiCreateCSStaff } from '../../api/CSStaffAPI';
-import { CreateCSStaffRequest } from '../../types';
-import { ChargingStationDto } from '../../types';
+import { apiUpdateCSStaff } from '../../api/CSStaffAPI';
+import { UpdateCSStaffProfileRequest, UserSummaryDto, ChargingStationDto } from '../../types';
 
-interface AddCSStaffModalProps {
+interface EditCSStaffModalProps {
     isOpen: boolean;
     onClose: () => void;
-    onSuccess: (newStaff: any) => void;
+    onSuccess: () => void;
     stations: ChargingStationDto[];
+    staff: UserSummaryDto | null;
 }
 
-export function AddCSStaffModal({ isOpen, onClose, onSuccess, stations }: AddCSStaffModalProps) {
+export function EditCSStaffModal({ isOpen, onClose, onSuccess, stations, staff }: EditCSStaffModalProps) {
 
     const [formData, setFormData] = useState({
         name: '',
-        email: '',
-        password: '',
         phoneNumber: '',
         stationId: ''
     });
     const [isLoading, setIsLoading] = useState(false);
-    const [errors, setErrors] = useState<Record<string, string>>({});
+
+    useEffect(() => {
+        if (staff) {
+            let currentStationId = '';
+
+            if (staff.stationId) {
+                currentStationId = staff.stationId.toString();
+            } else if (staff.assignedStation && staff.assignedStation.stationId) {
+                currentStationId = staff.assignedStation.stationId.toString();
+            }
+
+            setFormData({
+                name: staff.name,
+                phoneNumber: '',
+                stationId: currentStationId
+            });
+        }
+    }, [staff]);
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const { name, value } = e.target;
@@ -46,43 +61,31 @@ export function AddCSStaffModal({ isOpen, onClose, onSuccess, stations }: AddCSS
         }));
     };
 
-    const validate = () => {
-        const newErrors: Record<string, string> = {};
-        if (!formData.name.trim()) newErrors.name = "Tên không được để trống";
-        if (!formData.email.trim()) newErrors.email = "Email không được để trống";
-        if (!formData.password.trim()) newErrors.password = "Mật khẩu không được để trống";
-        if (!formData.stationId) newErrors.stationId = "Vui lòng chọn trạm sạc";
-        setErrors(newErrors);
-        return Object.keys(newErrors).length === 0;
-    };
-
     const handleSubmit = async () => {
-        if (!validate()) {
-            toast.error("Vui lòng kiểm tra lại thông tin.");
+        if (!staff || !staff.id) {
+            toast.error("Lỗi: Không tìm thấy User ID của nhân viên.");
             return;
         }
 
         setIsLoading(true);
 
-        const requestData: CreateCSStaffRequest = {
-            ...formData,
-            stationId: Number(formData.stationId) // Chuyển đổi sang số
+        const requestData: UpdateCSStaffProfileRequest = {
+            name: formData.name,
+            phoneNumber: formData.phoneNumber || undefined,
+            stationId: formData.stationId ? Number(formData.stationId) : undefined
         };
 
         try {
-            const newStaff = await apiCreateCSStaff(requestData);
-            toast.success(`Đã tạo nhân viên ${newStaff.userAccount.name}!`);
+            await apiUpdateCSStaff(staff.id, requestData);
+            toast.success(`Đã cập nhật nhân viên ${formData.name}!`);
 
-            onSuccess(newStaff);
+            onSuccess();
             onClose();
-
-            setFormData({ name: '', email: '', password: '', phoneNumber: '', stationId: '' });
-
         } catch (error: any) {
-            console.error('Failed to create staff:', error);
-            let errorMessage = "Không thể tạo nhân viên.";
+            console.error('Failed to update staff:', error);
+            let errorMessage = "Không thể cập nhật nhân viên.";
             if (axios.isAxiosError(error) && error.response) {
-                errorMessage = error.response.data?.message || errorMessage;
+                errorMessage = error.response.data?.message || error.response.data || errorMessage;
             }
             toast.error(errorMessage);
         } finally {
@@ -90,21 +93,22 @@ export function AddCSStaffModal({ isOpen, onClose, onSuccess, stations }: AddCSS
         }
     };
 
-    if (!isOpen) return null;
+    if (!isOpen || !staff) return null;
 
     return (
         <Dialog open={isOpen} onOpenChange={onClose}>
             <DialogContent className="sm:max-w-[425px]">
                 <DialogHeader>
                     <DialogTitle className="flex items-center gap-2">
-                        <UserPlus /> Thêm Nhân viên Trạm sạc (CSStaff)
+                        <UserCog className="h-5 w-5" /> Cập nhật Nhân viên
                     </DialogTitle>
                     <DialogDescription>
-                        Tài khoản này sẽ được gán quyền cho một trạm sạc cụ thể.
+                        Chỉnh sửa thông tin cho tài khoản <strong>{staff.email}</strong>
                     </DialogDescription>
                 </DialogHeader>
 
                 <div className="grid gap-4 py-4">
+                    {/* Tên */}
                     <div>
                         <Label htmlFor="name">Họ tên</Label>
                         <Input
@@ -113,56 +117,32 @@ export function AddCSStaffModal({ isOpen, onClose, onSuccess, stations }: AddCSS
                             value={formData.name}
                             onChange={handleChange}
                             disabled={isLoading}
-                            placeholder="VD: Nguyễn Văn A"
                         />
-                        {errors.name && <p className="text-sm text-red-500 mt-1">{errors.name}</p>}
                     </div>
+
+                    {/* Số điện thoại */}
                     <div>
-                        <Label htmlFor="email">Email Đăng nhập</Label>
-                        <Input
-                            id="email"
-                            name="email"
-                            type="email"
-                            value={formData.email}
-                            onChange={handleChange}
-                            disabled={isLoading}
-                            placeholder="VD: staff.A@example.com"
-                        />
-                        {errors.email && <p className="text-sm text-red-500 mt-1">{errors.email}</p>}
-                    </div>
-                    <div>
-                        <Label htmlFor="password">Mật khẩu</Label>
-                        <Input
-                            id="password"
-                            name="password"
-                            type="password"
-                            value={formData.password}
-                            onChange={handleChange}
-                            disabled={isLoading}
-                            placeholder="••••••••"
-                        />
-                        {errors.password && <p className="text-sm text-red-500 mt-1">{errors.password}</p>}
-                    </div>
-                    <div>
-                        <Label htmlFor="phoneNumber">Số điện thoại (Tùy chọn)</Label>
+                        <Label htmlFor="phoneNumber">Số điện thoại mới</Label>
                         <Input
                             id="phoneNumber"
                             name="phoneNumber"
                             value={formData.phoneNumber}
                             onChange={handleChange}
                             disabled={isLoading}
-                            placeholder="VD: 0901234567"
+                            placeholder="Nhập SĐT mới (nếu cần thay đổi)"
                         />
                     </div>
+
+                    {/* Chọn Trạm */}
                     <div>
-                        <Label htmlFor="stationId">Gán vào Trạm sạc</Label>
+                        <Label htmlFor="stationId">Chuyển công tác (Trạm sạc)</Label>
                         <Select
                             value={formData.stationId}
                             onValueChange={handleSelectChange}
                             disabled={isLoading}
                         >
                             <SelectTrigger>
-                                <SelectValue placeholder="Chọn trạm sạc để gán..." />
+                                <SelectValue placeholder="Chọn trạm sạc..." />
                             </SelectTrigger>
                             <SelectContent>
                                 {stations.length === 0 ? (
@@ -176,7 +156,6 @@ export function AddCSStaffModal({ isOpen, onClose, onSuccess, stations }: AddCSS
                                 )}
                             </SelectContent>
                         </Select>
-                        {errors.stationId && <p className="text-sm text-red-500 mt-1">{errors.stationId}</p>}
                     </div>
                 </div>
 
@@ -189,7 +168,7 @@ export function AddCSStaffModal({ isOpen, onClose, onSuccess, stations }: AddCSS
                         disabled={isLoading}
                         className="bg-[#0f766e] hover:bg-[#0f766e]/90"
                     >
-                        {isLoading ? "Đang tạo..." : "Tạo Nhân viên"}
+                        {isLoading ? "Đang lưu..." : "Lưu thay đổi"}
                     </Button>
                 </div>
             </DialogContent>

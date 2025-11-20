@@ -4,7 +4,7 @@ import { Badge } from '../../components/ui/badge';
 import { Button } from '../../components/ui/button';
 import { ArrowLeft, MapPin, Zap } from 'lucide-react';
 import { toast } from 'sonner';
-import { apiGetStationById } from '../../services/StationAPI';
+import { apiGetStationById } from '../../api/StationAPI';
 import { ChargingStationDto } from '../../types';
 import { StationChargingPoints } from '../../components/station/StationChargingPoints';
 

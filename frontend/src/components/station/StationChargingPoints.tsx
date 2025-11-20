@@ -12,7 +12,7 @@ import {
     TableHeader,
     TableRow,
 } from '../ui/table';
-import { apiGetChargingPointsByStationId, apiDeleteChargingPoint } from '../../services/StationAPI';
+import { apiGetChargingPointsByStationId, apiDeleteChargingPoint } from '../../api/StationAPI';
 import { ChargingPointDto } from '../../types';
 import { AddChargingPointModal } from './AddChargingPointModal';
 

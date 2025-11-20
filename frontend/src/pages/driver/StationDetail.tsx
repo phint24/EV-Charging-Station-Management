@@ -11,9 +11,9 @@ import axios from 'axios';
 import {
     apiGetStationById,
     apiGetChargingPointsByStationId
-} from '../../services/StationAPI';
-import { apiGetDriverProfile } from '../../services/DriverAPI';
-import { apiStartSession } from '../../services/ChargeSessionAPI';
+} from '../../api/StationAPI';
+import { apiGetDriverProfile } from '../../api/DriverAPI';
+import { apiStartSession } from '../../api/ChargeSessionAPI';
 
 import { BookingModal } from '../../components/booking/BookingModal';
 import {

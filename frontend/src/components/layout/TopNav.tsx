@@ -12,7 +12,7 @@ import { Badge } from '../ui/badge';
 import "../../styles/globals.css"
 import { useState, useEffect } from 'react';
 
-import { apiGetBalance } from '../../services/DriverAPI';
+import { apiGetBalance } from '../../api/DriverAPI';
 
 interface TopNavProps {
     userRole: 'ROLE_EVDRIVER' | 'ROLE_ADMIN' | 'ROLE_CSSTAFF';
@@ -128,7 +128,7 @@ export function TopNav({ userRole, userName, onLogout, onNavigate }: TopNavProps
                                 </div>
                             </DropdownMenuLabel>
                             <DropdownMenuSeparator />
-                            <DropdownMenuItem onClick={() => onNavigate('/profile')}>
+                            <DropdownMenuItem onClick={() => onNavigate('/driver/profile')}>
                                 <User className="mr-2 h-4 w-4" />
                                 Profile
                             </DropdownMenuItem>

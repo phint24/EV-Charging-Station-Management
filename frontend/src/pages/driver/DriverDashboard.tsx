@@ -18,17 +18,17 @@ import {
     apiDeleteVehicle,
     apiGetPaymentMethods,
     apiDeletePaymentMethod
-} from '../../services/DriverAPI';
+} from '../../api/DriverAPI';
 import {
     apiGetAllSessions,
     apiStartSession,
     apiStopSession
-} from '../../services/ChargeSessionAPI';
-import { apiGetAllStations } from '../../services/StationAPI';
+} from '../../api/ChargeSessionAPI';
+import { apiGetAllStations } from '../../api/StationAPI';
 import {
     apiGetMyBookings,
     apiCancelBooking
-} from '../../services/BookingAPI';
+} from '../../api/BookingAPI';
 import { AddVehicleModal } from '../../components/vehicle/AddVehicleModal';
 import { AddPaymentMethodModal } from '../../components/payment/AddPaymentMethodModal';
 
@@ -44,7 +44,7 @@ import {
 } from '../../types';
 
 import { ChatbotPanel } from '../../components/chatbot/ChatbotPanel';
-import { apiSendChatMessage, apiClearChatHistory } from '../../services/ChatbotAPI';
+import { apiSendChatMessage, apiClearChatHistory } from '../../api/ChatbotAPI';
 
 interface DriverDashboardProps {
     onNavigate: (path: string) => void;
