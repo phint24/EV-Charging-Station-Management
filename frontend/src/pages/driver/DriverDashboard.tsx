@@ -44,7 +44,7 @@ import {
 } from '../../types';
 
 import { ChatbotPanel } from '../../components/chatbot/ChatbotPanel';
-import { apiSendChatMessage, apiClearChatHistory } from '../../services/ChatbotAPI';
+import { apiSendChatMessage, apiClearChatHistory } from '../../api/ChatbotAPI';
 
 interface DriverDashboardProps {
     onNavigate: (path: string) => void;
