@@ -4,7 +4,6 @@ import {
     ChargingPointDto
 } from '../types';
 
-// Interface matching CreateStationRequest from backend, Thêm đoạn này 
 export interface CreateStationRequest {
     name: string;
     location: string;
@@ -13,14 +12,6 @@ export interface CreateStationRequest {
     availableChargers: number;
 }
 
-// Interface matching UpdateStationRequest from backend, Thêm đoạn này 
-// export interface UpdateStationRequest {
-//     name: string;
-//     location: string;
-//     status: 'ACTIVE' | 'INACTIVE' | 'MAINTENANCE';
-//     totalChargingPoint: number;
-//     availableChargers: number;
-// }
 export interface UpdateStationRequest {
   name: string;
   location: string;
