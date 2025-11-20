@@ -9,7 +9,7 @@ import { Checkbox } from '../ui/checkbox';
 import { toast } from 'sonner';
 import axios from 'axios';
 
-import { apiAddPaymentMethod } from '../../services/DriverAPI';
+import { apiAddPaymentMethod } from '../../api/DriverAPI';
 import { CreatePaymentMethodRequest, PaymentMethodDto, PaymentType } from '../../types';
 
 interface AddPaymentMethodModalProps {

@@ -4,7 +4,7 @@ import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import { Label } from '../ui/label';
 import { toast } from 'sonner';
-import { apiCreateBooking } from '../../services/BookingAPI';
+import { apiCreateBooking } from '../../api/BookingAPI';
 import { CreateBookingRequest } from '../../types';
 import axios from 'axios';
 

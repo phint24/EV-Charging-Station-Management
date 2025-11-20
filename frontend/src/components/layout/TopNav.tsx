@@ -12,7 +12,7 @@ import { Badge } from '../ui/badge';
 import "../../styles/globals.css"
 import { useState, useEffect } from 'react';
 
-import { apiGetBalance } from '../../services/DriverAPI';
+import { apiGetBalance } from '../../api/DriverAPI';
 
 interface TopNavProps {
     userRole: 'ROLE_EVDRIVER' | 'ROLE_ADMIN' | 'ROLE_CSSTAFF';

@@ -12,7 +12,7 @@ import {
     CreateChargingPointRequest,
     ConnectorType,
     ChargingPointStatus
-} from '../../services/StationAPI';
+} from '../../api/StationAPI';
 import { ChargingStationDto } from '../../types';
 
 interface AddChargingPointModalProps {

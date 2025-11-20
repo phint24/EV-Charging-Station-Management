@@ -8,4 +8,5 @@ import java.util.Optional;
 
 public interface CSStaffRepository extends JpaRepository<CSStaff, Long> {
     Optional<CSStaff> findByUserAccount(User user);
+    Optional<CSStaff> findByUserAccount_Id(Long userId);
 }

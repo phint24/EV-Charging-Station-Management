@@ -5,7 +5,7 @@ import { Input } from '../ui/input';
 import { Label } from '../ui/label';
 import { Card } from '../ui/card';
 import { toast } from 'sonner';
-import { apiCreateStation, CreateStationRequest } from '../../services/StationAPI';
+import { apiCreateStation, CreateStationRequest } from '../../api/StationAPI';
 import axios from 'axios';
 
 interface AddStationModalProps {

@@ -9,4 +9,5 @@ import project.code.model.User;
 @Repository
 public interface AdminRepository extends JpaRepository <Admin, Long> {
     Optional<Admin> findByUserAccount(User userAccount);
+    Optional<Admin> findByUserAccount_Id(Long userId);
 }

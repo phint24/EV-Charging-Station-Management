@@ -10,7 +10,7 @@ import { toast } from 'sonner';
 import axios from 'axios';
 import "../../styles/globals.css"
 
-import { apiTopUpWallet, apiGetPaymentMethods } from '../../services/DriverAPI';
+import { apiTopUpWallet, apiGetPaymentMethods } from '../../api/DriverAPI';
 import { PaymentMethodDto, WalletTopUpRequest } from '../../types';
 
 interface WalletPanelProps {

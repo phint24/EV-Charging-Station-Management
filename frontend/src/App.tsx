@@ -23,10 +23,10 @@ import { StaffDashboard } from './pages/staff/StaffDashboard';
 import { AdminDashboard } from './pages/admin/AdminDashboard';
 import "./styles/globals.css"
 
-import { apiGetDriverProfile } from './services/DriverAPI';
+import { apiGetDriverProfile } from './api/DriverAPI';
 import { AuthResponse } from './types';
 import { jwtDecode } from 'jwt-decode';
-import { setAuthToken } from "./services/api";
+import { setAuthToken } from "./api/api";
 
 type ApiRole = 'ROLE_ADMIN' | 'ROLE_CSSTAFF' | 'ROLE_EVDRIVER';
 
