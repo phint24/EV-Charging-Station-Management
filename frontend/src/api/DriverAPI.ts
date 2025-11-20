@@ -48,3 +48,11 @@ export const apiAddPaymentMethod = async (data: CreatePaymentMethodRequest): Pro
     const response = await API.post('/payment-methods', data);
     return response.data;
 };
+
+export const apiUpdateDriverProfile = async (data: {
+    name: string;
+    phoneNumber: string;
+}): Promise<EVDriverProfileDto> => {
+    const response = await API.put('/evdrivers/me', data);
+    return response.data;
+};

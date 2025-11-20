@@ -128,7 +128,7 @@ export function TopNav({ userRole, userName, onLogout, onNavigate }: TopNavProps
                                 </div>
                             </DropdownMenuLabel>
                             <DropdownMenuSeparator />
-                            <DropdownMenuItem onClick={() => onNavigate('/profile')}>
+                            <DropdownMenuItem onClick={() => onNavigate('/driver/profile')}>
                                 <User className="mr-2 h-4 w-4" />
                                 Profile
                             </DropdownMenuItem>

@@ -28,6 +28,8 @@ import { AuthResponse } from './types';
 import { jwtDecode } from 'jwt-decode';
 import { setAuthToken } from "./api/api";
 
+import { ProfilePage } from './pages/driver/ProfilePage';
+
 type ApiRole = 'ROLE_ADMIN' | 'ROLE_CSSTAFF' | 'ROLE_EVDRIVER';
 
 interface CurrentUser {
@@ -167,6 +169,9 @@ export default function App() {
       }
       return <Landing onNavigate={handleNavigate} />;
     }
+      if (currentPath === '/driver/profile' && currentUser.role === 'ROLE_EVDRIVER') {
+    return <ProfilePage onNavigate={handleNavigate} />;
+  }
 
     if (currentPath.startsWith('/driver/station/')) {
       const stationId = parseInt(currentPath.split('/').pop() || '0');
